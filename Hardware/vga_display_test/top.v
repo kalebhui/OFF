@@ -1,20 +1,20 @@
 module top(
 	//input
-	input                       clk,	//clk_50m
-	input                       rst_n,	//asynchronous active low reset
+	input                       CLOCK_50,	//clk_50m
+	input[3:0]                  KEY,	    //asynchronous active low reset
 	//vga output
-	output                      vga_clk,	//pixel_clk   
-	output                      vga_out_hs, //vga horizontal synchronization         
-	output                      vga_out_vs, //vga vertical synchronization                  
-	output[7:0]                 vga_out_r,  //vga red
-	output[7:0]                 vga_out_g,  //vga green
-	output[7:0]                 vga_out_b,   //vga blue
+	output                      VGA_CLK,	//pixel_clk   
+	output                      VGA_HS, //vga horizontal synchronization         
+	output                      VGA_VS, //vga vertical synchronization                  
+	output[7:0]                 VGA_R,  //vga red
+	output[7:0]                 VGA_G,  //vga green
+	output[7:0]                 VGA_B,   //vga blue
 
 	//output[31:0]				vga_row,     //y pixel coordinate; 0 = top row
 	//output[31:0]				vga_col,     //x pixel coordinate; 0 = leftmost
 
-	output                      vga_n_blank, //direct blanking
-	output                      vga_n_sync  //sync-on-green
+	output                      VGA_BLANK_N, //direct blanking
+	output                      VGA_SYNC_N  //sync-on-green
 	
 );
 
@@ -26,20 +26,20 @@ wire[7:0]                       video_r;
 wire[7:0]                       video_g;
 wire[7:0]                       video_b;
 
-assign vga_out_hs = video_h_sync;
-assign vga_out_vs = video_v_sync;
-assign vga_out_r  = video_r[7:0]; 
-assign vga_out_g  = video_g[7:0]; 
-assign vga_out_b  = video_b[7:0]; 
+assign VGA_HS = video_h_sync;
+assign VGA_VS = video_v_sync;
+assign VGA_R  = video_r[7:0]; 
+assign VGA_G  = video_g[7:0]; 
+assign VGA_B  = video_b[7:0]; 
 
-assign vga_n_blank = 1'b1; // 1 for no use
-assign vga_clk = video_clk;
-assign vga_n_sync = 1'b0; // 0 for no use
+assign VGA_BLANK_N = 1'b1; // 1 for no use
+assign VGA_CLK = video_clk;
+assign VGA_SYNC_N = 1'b0; // 0 for no use
 
 //generate video pixel clock
 pll pll_test(
-		.refclk(clk),   //  refclk.clk
-		.rst(~rst_n),      //   reset.reset
+		.refclk(CLOCK_50),   //  refclk.clk
+		.rst(~KEY[0]),      //   reset.reset
 		.outclk_0(video_clk)  // outclk0.clk
 	);
 
