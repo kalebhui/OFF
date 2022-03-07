@@ -18,14 +18,14 @@
 # -------------------------------------------------------------------------- #
 #
 # Quartus Prime
-# Version 19.1.0 Build 670 09/22/2019 Patches 0.02std SJ Lite Edition
-# Date created = 19:04:56  February 28, 2022
+# Version 19.1.0 Build 670 09/22/2019 SJ Lite Edition
+# Date created = 21:49:54  February 17, 2022
 #
 # -------------------------------------------------------------------------- #
 
 QUARTUS_VERSION = "19.1"
-DATE = "19:04:56  February 28, 2022"
+DATE = "21:49:54  February 17, 2022"
 
 # Revisions
 
-PROJECT_REVISION = "top"
+PROJECT_REVISION = "hw_test"
