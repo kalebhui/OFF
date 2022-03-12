@@ -1,9 +1,10 @@
 import socket
 import threading
+import time
 
 HEADER = 64
 SERVER = socket.gethostbyname(socket.gethostname())
-PORT = 10009
+PORT = 5001
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "quit"
 
@@ -35,6 +36,7 @@ def handle_client(conn, addr):
         message = conn.recv(1024).decode(FORMAT)
         if message == DISCONNECT_MESSAGE:
             connected = False
+            print(connected)
         print("[" + str(addr) + "] " + message)
     conn.close()
 

@@ -4,9 +4,10 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+// #include <pthread.h>
 
 // define port we are connecting to
-#define PORT 10009
+#define PORT 5001
 #define buffer_size 960
 #define bitmap_width 40
 #define bitmap_height 24
@@ -51,27 +52,36 @@ int main(int argc, char const *argv[])
 	{
 		printf("Enter message : ");
 		scanf("%s" , message);
-        if (strcmp (message, disc_msg)  != 0) {
-            prinf("quitting");
-			return 1;
-        }
+        int flag = 0;
 
 		//Send some data
 		if( send(sock , message , strlen(message) , 0) < 0)
 		{
-			prinf("Send failed");
+			printf("Send failed");
 			return 1;
 		}
+
+        // check if client is quitting
+        for(int i = 0; i < 4; i++) {
+            if(disc_msg[i] != message[i]) {
+                flag = 1;
+            }
+        }
+
+        if (flag == 0) {
+            printf("quitting");
+			return 0;
+        }
 	}
 
 
-    int buffer_index = 0;
-    for (int i = 0; i < bitmap_height; i++) {
-        for (int j = 0; j < bitmap_width; j++) {
-            bitmap_arr[i][j] = buffer[buffer_index] - '0';
-            buffer_index++;
-        }
-    }
+    // int buffer_index = 0;
+    // for (int i = 0; i < bitmap_height; i++) {
+    //     for (int j = 0; j < bitmap_width; j++) {
+    //         bitmap_arr[i][j] = buffer[buffer_index] - '0';
+    //         buffer_index++;
+    //     }
+    // }
 
     // for (int i = 0; i < bitmap_height; i++) {
     //     for (int j = 0; j < bitmap_width; j++) {
