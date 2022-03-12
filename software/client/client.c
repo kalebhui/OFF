@@ -1,4 +1,3 @@
-// Client side C program (adapted from https://www.geeksforgeeks.org/socket-programming-cc/)
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -7,7 +6,7 @@
 #include <string.h>
 
 // define port we are connecting to
-#define PORT 10007
+#define PORT 10009
 #define buffer_size 960
 #define bitmap_width 40
 #define bitmap_height 24
@@ -15,10 +14,7 @@
 int main(int argc, char const *argv[])
 {
     int sock = 0, valread;
-    // int bitmap_width = 40;
-    // int bitmap_height = 24;
     struct sockaddr_in serv_addr;
-    // int buffer_size = 40*24;
     char buffer[buffer_size] = {0};
     int bitmap_arr[bitmap_height][bitmap_width] = {0};
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -44,10 +40,30 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    printf("Connection Successful\n");
+    // printf("Connection Successful\n");
     valread = read( sock , buffer, buffer_size); // Get message sent by server
-
     printf("%s\n",buffer);               // print message
+
+    char disc_msg[4] = "quit";
+    char message[1024] = {0};
+    //keep communicating with server
+	while(1)
+	{
+		printf("Enter message : ");
+		scanf("%s" , message);
+        if (strcmp (message, disc_msg)  != 0) {
+            prinf("quitting");
+			return 1;
+        }
+
+		//Send some data
+		if( send(sock , message , strlen(message) , 0) < 0)
+		{
+			prinf("Send failed");
+			return 1;
+		}
+	}
+
 
     int buffer_index = 0;
     for (int i = 0; i < bitmap_height; i++) {
@@ -63,7 +79,6 @@ int main(int argc, char const *argv[])
     //     }
     //     printf("\n");
     // }
-
 
     return 0;
 }
