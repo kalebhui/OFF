@@ -1,10 +1,10 @@
 import socket
 import threading
 import time
+import sys
 
-HEADER = 64
 SERVER = socket.gethostbyname(socket.gethostname())
-PORT = 5001
+PORT = 5004
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "quit"
 
@@ -26,21 +26,43 @@ bitmap = [
 
 str_bitmap = ''.join(str(item) for innerlist in bitmap for item in innerlist)
 
-def handle_client(conn, addr):
-    print("[NEW CONNECTION] " + str(addr) + " connected")
-    conn.send('Connected to server'.encode())
-
+def receiver (conn, addr):
     connected = True
+
     while connected:
         # block thread until we get information from Client
         message = conn.recv(1024).decode(FORMAT)
-        if message == DISCONNECT_MESSAGE:
+        if message == DISCONNECT_MESSAGE or not message:
             connected = False
-            print(connected)
-        print("[" + str(addr) + "] " + message)
+            print("[" + str(addr) + "] " + DISCONNECT_MESSAGE)
+        else:
+            print("[" + str(addr) + "] " + message)
     conn.close()
 
-    # conn.send(str_bitmap.encode())
+def sender (conn, addr):
+    connected = True
+
+    while connected:
+        # block thread until we get information from Client
+        try:
+            conn.send(str_bitmap.encode())
+            time.sleep(5)
+        except socket.error:
+            connected = False
+            print("[" + str(addr) + "] " + DISCONNECT_MESSAGE)
+    conn.close()
+
+def handle_client(conn, addr):
+    print("[NEW CONNECTION] " + str(addr) + " connected")
+
+    message = conn.recv(1).decode(FORMAT)
+    message = int(message)
+    if message == 1:
+        receiver(conn, addr) #i am receiving messages
+    elif message == 0:
+        sender(conn, addr) #i am sending messages
+    else:
+        print("ERROR")
 
 def run_server():
     server.listen(5)
@@ -52,5 +74,9 @@ def run_server():
         thread.start()
         print("[ACTIVE CONNECTIONS] " + str(threading.activeCount() - 1)) # Don't include main thread
 
-print("Starting server")
-run_server()
+try:
+    print("Starting server")
+    run_server()
+except (KeyboardInterrupt, SystemExit): # close server with Ctrl + C
+    print("\nClosing Server")
+    sys.exit()

@@ -4,16 +4,15 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
-// #include <pthread.h>
+#include <pthread.h>
 
 // define port we are connecting to
-#define PORT 5001
+#define PORT 5004
 #define buffer_size 960
 #define bitmap_width 40
 #define bitmap_height 24
 
-int main(int argc, char const *argv[])
-{
+int create_socket() {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
     char buffer[buffer_size] = {0};
@@ -40,17 +39,60 @@ int main(int argc, char const *argv[])
         printf("\nConnection Failed \n");
         return -1;
     }
+    return sock;
+}
 
-    // printf("Connection Successful\n");
-    valread = read( sock , buffer, buffer_size); // Get message sent by server
-    printf("%s\n",buffer);               // print message
 
+void *receiver(void *arg) {
+    char buffer[buffer_size] = {0};
+    int bitmap_arr[bitmap_height][bitmap_width] = {0};
+    int sock = create_socket();
+    int valread;
+    if(sock == -1) {
+        return NULL;
+    }
+
+    if( send(sock , "0", 1, 0) < 0) //used to distinguish what the connection is for on the server
+	{
+        printf("Send failed");
+		return NULL;
+	}
+
+    while(1) {
+        valread = read( sock , buffer, buffer_size); // Get message sent by server
+        int buffer_index = 0;
+        for (int i = 0; i < bitmap_height; i++) {
+            for (int j = 0; j < bitmap_width; j++) {
+                bitmap_arr[i][j] = buffer[buffer_index] - '0';
+                buffer_index++;
+            }
+        }
+
+        for (int i = 0; i < bitmap_height; i++) {
+            for (int j = 0; j < bitmap_width; j++) {
+                printf("%d, ", bitmap_arr[i][j]);
+            }
+            printf("\n");
+        }
+    }
+}
+
+void *sender(void *arg) {
+    int sock = create_socket();
     char disc_msg[4] = "quit";
     char message[1024] = {0};
-    //keep communicating with server
-	while(1)
+    if(sock == -1) {
+        return NULL;
+    }
+
+	if( send(sock , "1", 1, 0) < 0)
 	{
-		printf("Enter message : ");
+		printf("Send failed");
+		return NULL;
+	}
+
+    while (1) {
+        printf("Enter message : ");
 		scanf("%s" , message);
         int flag = 0;
 
@@ -58,7 +100,7 @@ int main(int argc, char const *argv[])
 		if( send(sock , message , strlen(message) , 0) < 0)
 		{
 			printf("Send failed");
-			return 1;
+			return NULL;
 		}
 
         // check if client is quitting
@@ -70,25 +112,22 @@ int main(int argc, char const *argv[])
 
         if (flag == 0) {
             printf("quitting");
-			return 0;
+			return NULL;
         }
-	}
+    }
+}
 
-
-    // int buffer_index = 0;
-    // for (int i = 0; i < bitmap_height; i++) {
-    //     for (int j = 0; j < bitmap_width; j++) {
-    //         bitmap_arr[i][j] = buffer[buffer_index] - '0';
-    //         buffer_index++;
-    //     }
-    // }
-
-    // for (int i = 0; i < bitmap_height; i++) {
-    //     for (int j = 0; j < bitmap_width; j++) {
-    //         printf("%d, ", bitmap_arr[i][j]);
-    //     }
-    //     printf("\n");
-    // }
+int main(int argc, char const *argv[])
+{
+    pthread_t thread_id1;
+    pthread_t thread_id2;
+    pthread_create(&thread_id1, NULL, receiver, NULL);
+    pthread_create(&thread_id2, NULL, sender, NULL);
+    pthread_join(thread_id1, NULL);
+    printf("thread 1 joined");
+    pthread_join(thread_id2, NULL);
+    printf("thread 2 joined");
+    exit(0);
 
     return 0;
 }
