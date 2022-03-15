@@ -8,7 +8,7 @@
 
 // define port we are connecting to
 #define PORT 5004
-#define buffer_size 960
+#define buffer_size 7000
 #define bitmap_width 40
 #define bitmap_height 24
 
@@ -27,7 +27,8 @@ int create_socket() {
     serv_addr.sin_port = htons(PORT);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    // if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    if(inet_pton(AF_INET, "128.189.25.223", &serv_addr.sin_addr)<=0)
     {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
@@ -39,12 +40,13 @@ int create_socket() {
         printf("\nConnection Failed \n");
         return -1;
     }
+
     return sock;
 }
 
 
 void *receiver(void *arg) {
-    char buffer[buffer_size] = {0};
+    char * buffer = malloc(buffer_size);
     int bitmap_arr[bitmap_height][bitmap_width] = {0};
     int sock = create_socket();
     int valread;
@@ -59,22 +61,34 @@ void *receiver(void *arg) {
 	}
 
     while(1) {
-        valread = read( sock , buffer, buffer_size); // Get message sent by server
-        int buffer_index = 0;
-        for (int i = 0; i < bitmap_height; i++) {
-            for (int j = 0; j < bitmap_width; j++) {
-                bitmap_arr[i][j] = buffer[buffer_index] - '0';
-                buffer_index++;
-            }
-        }
+        int coords_row = 0;
+        int coords_col = 0;
+        int coords[1000][3] = {0}; //change size later
+        
+        valread = read(sock, buffer, buffer_size);
 
-        for (int i = 0; i < bitmap_height; i++) {
-            for (int j = 0; j < bitmap_width; j++) {
-                printf("%d, ", bitmap_arr[i][j]);
+        char * token = strtok(buffer, ",");
+
+        while( token != NULL ) {
+            if(*token == '&') {
+                break;
             }
-            printf("\n");
+            int num = atoi(token);
+            coords[coords_row][coords_col] = num;
+            coords_col++;
+            if(coords_col == 3) {
+                coords_col = 0;
+                coords_row++;
+            }
+            token = strtok(NULL, ",");
         }
-    }
+        
+        // for(int i = 0; i < 1000; i++) {
+        //     for(int j = 0; j < 3; j++) {
+        //         printf("%d, ", coords[i][j]);
+        //     }
+        //     printf("\n");
+        // }
 }
 
 void *sender(void *arg) {

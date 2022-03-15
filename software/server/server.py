@@ -3,14 +3,16 @@ import threading
 import time
 import sys
 
-SERVER = socket.gethostbyname(socket.gethostname())
+# SERVER = socket.gethostbyname(socket.gethostname())
+SERVER = '128.189.25.223'  #replace with network Wireless LAN adapter Wi-Fi IPv4 Address
+print(SERVER)
 PORT = 5004
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "quit"
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# server.bind((SERVER, PORT))
-server.bind(('', PORT))
+server.bind((SERVER, PORT))
+# server.bind(('', PORT))
 
 bitmap = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -28,7 +30,6 @@ str_bitmap = ''.join(str(item) for innerlist in bitmap for item in innerlist)
 
 def receiver (conn, addr):
     connected = True
-
     while connected:
         # block thread until we get information from Client
         message = conn.recv(1024).decode(FORMAT)
