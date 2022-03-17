@@ -62,7 +62,7 @@ int listen_kbd(int* kbd_ptr){
 
 char get_keyvalue(int kbd_ptr){
     char key_value;
-    switch(kbd_ptr){
+switch(kbd_ptr){
     case 0x7001a:
       key_value = 'w';
       break;
