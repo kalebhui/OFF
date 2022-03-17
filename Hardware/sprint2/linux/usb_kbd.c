@@ -60,6 +60,85 @@ int listen_kbd(int* kbd_ptr){
     return ret;
 }
 
+char get_keyvalue(int kbd_ptr){
+    char key_value;
+    switch (kbd_ptr)
+​{
+    case 0x7001a:
+      key_value = 'w';
+      break;
+    case 0x11:
+      key_value = 'w';
+      break;
+    case 0x70004:
+      key_value = 'a';
+    case 0x1e:
+      key_value = 'a';
+    case 0x70016:
+      key_value = 's';
+    case 0x1f:
+      key_value = 's';
+    case 0x70007:
+      key_value = 'd';
+    case 0x20:
+      key_value = 'd';
+    case 0x7002c:
+      key_value = ' ';
+      break;
+    case 0x39:
+      key_value = ' ';
+      break;
+    case 0x70027:
+      key_value = '0';
+    case 0xb:
+      key_value = '0';
+    case 0x7001e:
+      key_value = '1';
+    case 0x02:
+      key_value = '1';
+    case 0x7001f:
+      key_value = '2';
+    case 0x03:
+      key_value = '2';
+    case 0x70020:
+      key_value = '3';
+    case 0x04:
+      key_value = '3';
+    case 0x70021:
+      key_value = '4';
+    case 0x05:
+      key_value = '4';
+    case 0x70022:
+      key_value = '5';
+    case 0x06:
+      key_value = '5';
+    case 0x70023:
+      key_value = '6';
+    case 0x07:
+      key_value = '6';
+    case 0x70024:
+      key_value = '7';
+    case 0x08:
+      key_value = '7';
+    case 0x70025:
+      key_value = '8';
+    case 0x09:
+      key_value = '8';
+    case 0x70026:
+      key_value = '9';
+    case 0xa:
+      key_value = '9';
+    case 0x70028:
+      key_value = 'e'; //enter
+    case 0x1c:
+      key_value = 'e';
+    default:
+      key_value = 0;
+      // default statements
+}
+return key_value;
+}
+
     // while(1){
     //     kbd_event = malloc(sizeof(struct input_event));  
     //     memset(kbd_event, 0, sizeof(struct input_event));  //clear/reset kbd_event
@@ -79,26 +158,44 @@ int main(void)
 {
    int kbd_ptr;
    int ret;
+   char key_v;
    for(int i = 0; i<50; i++){
        ret = listen_kbd(&kbd_ptr);
-       if(ret!=0){
-        if(kbd_ptr == 0x7001a || kbd_ptr == 0x11){
-            printf("recieved key: W\n");
-        }else if(kbd_ptr == 0x70004 || kbd_ptr == 0x1e){
-            printf("recieved key: A\n");
-        }else if(kbd_ptr == 0x70016 || kbd_ptr == 0x1f){
-            printf("recieved key: S\n");
-        }else if(kbd_ptr == 0x70007 || kbd_ptr == 0x20){
-            printf("recieved key: D\n");
-        }
-       }
+       key_v = get_keyvalue(kbd_ptr);
+    //    if(ret!=0){
+    //     if(kbd_ptr == 0x7001a || kbd_ptr == 0x11){
+    //         printf("recieved key: W\n");
+    //     }else if(kbd_ptr == 0x70004 || kbd_ptr == 0x1e){
+    //         printf("recieved key: A\n");
+    //     }else if(kbd_ptr == 0x70016 || kbd_ptr == 0x1f){
+    //         printf("recieved key: S\n");
+    //     }else if(kbd_ptr == 0x70007 || kbd_ptr == 0x20){
+    //         printf("recieved key: D\n");
+    //     }
+    //    }
+    if(ret!=0){
+        if(key_v!=){
+            printf("recieved key: %c\n", key_v);
+            }
+    }
    }
 
    return 0;
 }
 
-//W 7001a or 11
-//A 70004 or 1e
-//S 70016 or 1f
-//D 70007 or 20
-// space and all numbers will be added
+//W 0x7001a or 0x11
+//A 0x70004 or 0x1e
+//S 0x70016 or 0x1f
+//D 0x70007 or 0x20
+//space 0x7002c or 0x39
+//0 0x70027 or 0xb
+//1 0x7001e or 0x02
+//2 0x7001f or 0x03
+//3 0x70020 or 0x04  
+//4 0x70021 or 0x05
+//5 0x70022 or 0x06
+//6 0x70023 or 0x07
+//7 0x70024 or 0x08
+//8 0x70025 or 0x09
+//9 0x70026 or 0xa
+//enter 0x70028 or 0x1c
