@@ -8,15 +8,18 @@
 
 // define port we are connecting to
 #define PORT 5004
+// Use IPv4/IPv6 address of internet connection
+#define ipaddress "172.20.10.4"
+
+// preset sizes
 #define buffer_size 7000
 #define bitmap_width 40
 #define bitmap_height 24
 
-int create_socket() {
+int connect_socket() {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
-    char buffer[buffer_size] = {0};
-    int bitmap_arr[bitmap_height][bitmap_width] = {0};
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
@@ -28,7 +31,7 @@ int create_socket() {
 
     // Convert IPv4 and IPv6 addresses from text to binary form
     // if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
-    if(inet_pton(AF_INET, "128.189.25.223", &serv_addr.sin_addr)<=0)
+    if(inet_pton(AF_INET, ipaddress, &serv_addr.sin_addr)<=0)
     {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
@@ -47,8 +50,7 @@ int create_socket() {
 
 void *receiver(void *arg) {
     char * buffer = malloc(buffer_size);
-    int bitmap_arr[bitmap_height][bitmap_width] = {0};
-    int sock = create_socket();
+    int sock = connect_socket();
     int valread;
     if(sock == -1) {
         return NULL;
@@ -64,7 +66,7 @@ void *receiver(void *arg) {
         int coords_row = 0;
         int coords_col = 0;
         int coords[1000][3] = {0}; //change size later
-        
+
         valread = read(sock, buffer, buffer_size);
 
         char * token = strtok(buffer, ",");
@@ -82,7 +84,8 @@ void *receiver(void *arg) {
             }
             token = strtok(NULL, ",");
         }
-        
+    }
+
         // for(int i = 0; i < 1000; i++) {
         //     for(int j = 0; j < 3; j++) {
         //         printf("%d, ", coords[i][j]);
@@ -92,7 +95,7 @@ void *receiver(void *arg) {
 }
 
 void *sender(void *arg) {
-    int sock = create_socket();
+    int sock = connect_socket();
     char disc_msg[4] = "quit";
     char message[1024] = {0};
     if(sock == -1) {
@@ -107,7 +110,7 @@ void *sender(void *arg) {
 
     while (1) {
         printf("Enter message : ");
-		scanf("%s" , message);
+		scanf("%s" , message); //replace with keyboard functions from hardware later
         int flag = 0;
 
 		//Send some data
