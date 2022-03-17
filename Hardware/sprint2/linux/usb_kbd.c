@@ -80,15 +80,18 @@ switch(kbd_ptr){
       break;
     case 0x1f:
       key_value = 's';
+      break;
     case 0x70007:
       key_value = 'd';
+      break;
     case 0x20:
       key_value = 'd';
+      break;
     case 0x7002c:
-      key_value = ' ';
+      key_value = 'p'; //space
       break;
     case 0x39:
-      key_value = ' ';
+      key_value = 'p';
       break;
     case 0x70027:
       key_value = '0';
