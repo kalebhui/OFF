@@ -62,8 +62,7 @@ int listen_kbd(int* kbd_ptr){
 
 char get_keyvalue(int kbd_ptr){
     char key_value;
-    switch (kbd_ptr)
-​{
+    switch(kbd_ptr){
     case 0x7001a:
       key_value = 'w';
       break;
@@ -72,10 +71,13 @@ char get_keyvalue(int kbd_ptr){
       break;
     case 0x70004:
       key_value = 'a';
+      break;
     case 0x1e:
       key_value = 'a';
+      break;
     case 0x70016:
       key_value = 's';
+      break;
     case 0x1f:
       key_value = 's';
     case 0x70007:
@@ -90,52 +92,74 @@ char get_keyvalue(int kbd_ptr){
       break;
     case 0x70027:
       key_value = '0';
+      break;
     case 0xb:
       key_value = '0';
+      break;
     case 0x7001e:
       key_value = '1';
+      break;
     case 0x02:
       key_value = '1';
+      break;
     case 0x7001f:
       key_value = '2';
+      break;
     case 0x03:
       key_value = '2';
+      break;
     case 0x70020:
       key_value = '3';
+      break;
     case 0x04:
       key_value = '3';
+      break;
     case 0x70021:
       key_value = '4';
+      break;
     case 0x05:
       key_value = '4';
+      break;
     case 0x70022:
       key_value = '5';
+      break;
     case 0x06:
       key_value = '5';
+      break;
     case 0x70023:
       key_value = '6';
+      break;
     case 0x07:
       key_value = '6';
+      break;
     case 0x70024:
       key_value = '7';
+      break;
     case 0x08:
       key_value = '7';
+      break;
     case 0x70025:
       key_value = '8';
+      break;
     case 0x09:
       key_value = '8';
+      break;
     case 0x70026:
       key_value = '9';
+      break;
     case 0xa:
       key_value = '9';
+      break;
     case 0x70028:
       key_value = 'e'; //enter
+      break;
     case 0x1c:
       key_value = 'e';
+      break;
     default:
       key_value = 0;
       // default statements
-}
+    }
 return key_value;
 }
 
@@ -174,7 +198,7 @@ int main(void)
     //     }
     //    }
     if(ret!=0){
-        if(key_v!=){
+        if(key_v!=0){
             printf("recieved key: %c\n", key_v);
             }
     }
