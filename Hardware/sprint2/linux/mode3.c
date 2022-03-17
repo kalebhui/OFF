@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include "../address_map_arm.h"
+#include "address_map_arm.h"
 
 /* Prototypes for functions used to access physical memory addresses */
 int open_physical (int);
@@ -62,7 +62,7 @@ int unmap_physical(void * virtual_base, unsigned int span)
    return 0;
 }
 
-void mode3_driver(int x1, int y1, int width, int height, char color)
+int mode3_driver(int x1, int y1, int width, int height, char color)
 {
    volatile int * control_ptr;   // virtual address pointer to obtain x1,y1
 
@@ -75,22 +75,22 @@ void mode3_driver(int x1, int y1, int width, int height, char color)
    if ((LW_virtual = map_physical (fd, LW_BRIDGE_BASE, LW_BRIDGE_SPAN)) == NULL)
       return (-1);
 
-    control_ptr = control_ptr = (unsigned int *) (LW_virtual);
+    control_ptr = control_ptr = (unsigned int *) (LW_virtual + 1024);
     while(*control_ptr == 0){
         //read ready state of fsm, hold until ready
     }
 
    // Set virtual address pointer to I/O port
-   control_ptr = (unsigned int *) (LW_virtual + 8);
+   control_ptr = (unsigned int *) (LW_virtual + 8 + 1024);
    *control_ptr = color * 131072 + y1 * 512 + x1;
 
-   control_ptr = (unsigned int *) (LW_virtual + 12);
+   control_ptr = (unsigned int *) (LW_virtual + 12 + 1024);
    *control_ptr = height * 512 + width;
 
-   control_ptr = (unsigned int *) (LW_virtual + 4);
+   control_ptr = (unsigned int *) (LW_virtual + 4 + 1024);
    *control_ptr = 1;
 
-   control_ptr = (unsigned int *) (LW_virtual + 4);
+   control_ptr = (unsigned int *) (LW_virtual + 4 + 1024);
    *control_ptr = 0;
     
    unmap_physical (LW_virtual, LW_BRIDGE_SPAN);   // release the physical-memory mapping
@@ -100,7 +100,11 @@ void mode3_driver(int x1, int y1, int width, int height, char color)
 
 int main(void)
 {
-   mode3_driver(50,50,50,50, 0xFF);
-   
+   mode3_driver(0,0,320,240, 0xF0);
+   mode3_driver(10,10,300,220,0x00);
+   mode3_driver(50,50,100,100,0x0F);
+   mode3_driver(70,60,10,20,0xFF);
+   mode3_driver(110,60,10,20,0xFF);
+   mode3_driver(80,120,50,10,0xFF);
    return 0;
 }

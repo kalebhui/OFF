@@ -84,49 +84,49 @@ module render_accelerator_module (
 
     always @(posedge clock_sink_clk) begin
         if(reset_sink_reset) begin
-            state <= 5'b00000;
+            state <= idle;
         end else begin
             case (state)
                 //Idle state, ready to start new operation
-                5'b00000    : begin
+                idle    : begin
                     //Mode: Drawing Square, set up registers
                     if(start_flag && (mode_reg == 4'b0000))begin
-                        state       <= 5'b10001;
+                        state       <= inc_x;
                         ready_flag  <= 1'b0;
                         x_counter   <= 9'b0;
                         y_counter   <= 9'b0; 
                     end
                     else begin
                         ready_flag  <= 1'b1;
-                        state       <= 5'b00000;
+                        state       <= idle;
                     end
                 end
 
                 //Mode: Drawing Square, incrementing x counter
-                5'b10001   : begin
+                inc_x   : begin
                     //reach end of line, switch to next line
                     if (x_counter == (width - 1) && y_counter == (height - 1)) begin
-                        state       <= 5'b00011;
+                        state       <= finish;
                     end
                     //reach end of block, go to finish
                     else if (x_counter == (width - 1)) begin
-                        state       <= 5'b10010;
+                        state       <= inc_y;
                         x_counter   <= 9'b0;
                     end
                     //continue drawing current line
                     else begin
-                        state       <= 5'b10001;
+                        state       <= inc_x;
                         x_counter   <= x_counter + 1;
                     end
                 end
                 //Mode: Drawing Square, incrementing y counter
-                5'b10010   : begin
-                    state   <=  5'b10001;
+                inc_y   : begin
+                    state   <=  inc_x;
                     y_counter <= y_counter + 1;
                 end
                 //Finished
-                5'b00011  : state <= 5'b00000;
-                default : state <= 5'b00000;
+                finish  : state <= idle;
+                default : state <= idle;
             endcase
         end
         
