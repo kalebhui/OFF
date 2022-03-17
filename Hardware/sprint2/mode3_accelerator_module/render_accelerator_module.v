@@ -8,14 +8,15 @@
 // to your version control system if you want to keep it.
 
 `timescale 1 ps / 1 ps
-module vga_onchip_interface (
-		input  wire        clock_sink_clk,         //    clock_sink.clk
-		input  wire        reset_sink_reset,       //    reset_sink.reset
+module render_accelerator_module (
+		input         clock_sink_clk,         //    clock_sink.clk
+		input         reset_sink_reset,       //    reset_sink.reset
 
         ///////    On-chip mem interface    //////
-		input wire [17:0]   avalon_master_mem_address,  // address to on-chip-memory
-		input wire          avalon_master_mem_write,    //              .write
-		output  wire [7:0] avalon_master_writedata,    //              .write data
+		output    [17:0]   avalon_master_mem_address,  // address to on-chip-memory
+		output             avalon_master_mem_write,    //              .write
+		output    [7:0]    avalon_master_mem_writedata,    //              .write data
+        input              avalon_master_waitrequest,
 
         ///////    HPS control interface    //////
         input 		[7:0]  avalon_slave_hps_addr,       //address from hps
@@ -42,7 +43,7 @@ module vga_onchip_interface (
                 end
                 8'h02   :    control_reg_1 <= avalon_slave_hps_writedata;
                 8'h03   :    control_reg_2 <= avalon_slave_hps_writedata; 
-                default :    //NOP
+                default :    ;//NOP
             endcase
         end
 
@@ -58,8 +59,89 @@ module vga_onchip_interface (
     end
 
 
-    ////// TODO : do the first fsm
-    
+    ////// TODO : do the fsm
+    reg [4:0] state = 5'b00000;
+    //state bit 4 = write to memory
+    assign avalon_master_mem_write      = state[4];
+    assign avalon_master_mem_writedata  = color[7:0];
+
+    reg [8:0] x_counter  = 9'b0;
+    reg [7:0] y_counter  = 9'b0;
+    wire [8:0] x_coord   = control_reg_1[8:0];
+    wire [7:0] y_coord   = control_reg_1[16:9];
+    wire [7:0] color     = control_reg_1[24:17];
+    wire [8:0] width    = control_reg_2[8:0];
+    wire [7:0] height   = control_reg_2[16:9];
+
+    wire [8:0] x_pos     = x_coord + x_counter;
+    wire [7:0] y_pos     = y_coord + y_counter;   
+
+    parameter idle      = 5'b00000;
+    parameter inc_x     = 5'b10001;
+    parameter inc_y     = 5'b10010;
+    parameter finish    = 5'b00011;
+    parameter square    = 4'b0000;
+
+    always @(posedge clock_sink_clk) begin
+        if(reset_sink_reset) begin
+            state <= 5'b00000;
+        end else begin
+            case (state)
+                //Idle state, ready to start new operation
+                5'b00000    : begin
+                    //Mode: Drawing Square, set up registers
+                    if(start_flag && (mode_reg == 4'b0000))begin
+                        state       <= 5'b10001;
+                        ready_flag  <= 1'b0;
+                        x_counter   <= 9'b0;
+                        y_counter   <= 9'b0; 
+                    end
+                    else begin
+                        ready_flag  <= 1'b1;
+                        state       <= 5'b00000;
+                    end
+                end
+
+                //Mode: Drawing Square, incrementing x counter
+                5'b10001   : begin
+                    //reach end of line, switch to next line
+                    if (x_counter == (width - 1) && y_counter == (height - 1)) begin
+                        state       <= 5'b00011;
+                    end
+                    //reach end of block, go to finish
+                    else if (x_counter == (width - 1)) begin
+                        state       <= 5'b10010;
+                        x_counter   <= 9'b0;
+                    end
+                    //continue drawing current line
+                    else begin
+                        state       <= 5'b10001;
+                        x_counter   <= x_counter + 1;
+                    end
+                end
+                //Mode: Drawing Square, incrementing y counter
+                5'b10010   : begin
+                    state   <=  5'b10001;
+                    y_counter <= y_counter + 1;
+                end
+                //Finished
+                5'b00011  : state <= 5'b00000;
+                default : state <= 5'b00000;
+            endcase
+        end
+        
+    end
+
+    assign avalon_master_mem_address = {1'b0, y_pos[7:0], x_pos[8:0]};
+    // always @(*) begin
+    //     case (mode_reg)
+    //         square  : begin
+    //             avalon_master_mem_address = {1'b0, y_pos[7:0], x_pos[8:0]};
+    //         end
+    //         default: avalon_master_mem_address = 18'b0;
+    //     endcase
+        
+    // end
 
 
 endmodule

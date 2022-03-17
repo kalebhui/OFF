@@ -33,6 +33,14 @@
          type = "int";
       }
    }
+   element onchip_mem_vga_Interface_0.avalon_slave
+   {
+      datum baseAddress
+      {
+         value = "0";
+         type = "String";
+      }
+   }
    element onchip_memory2_0
    {
       datum _sortIndex
@@ -54,6 +62,22 @@
       datum baseAddress
       {
          value = "0";
+         type = "String";
+      }
+   }
+   element render_accelerator_0
+   {
+      datum _sortIndex
+      {
+         value = "4";
+         type = "int";
+      }
+   }
+   element render_accelerator_0.avalon_slave_hps
+   {
+      datum baseAddress
+      {
+         value = "1024";
          type = "String";
       }
    }
@@ -727,11 +751,22 @@
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
  </module>
+ <module
+   name="render_accelerator_0"
+   kind="render_accelerator"
+   version="1.0"
+   enabled="1">
+  <parameter name="finish" value="3" />
+  <parameter name="idle" value="0" />
+  <parameter name="inc_x" value="17" />
+  <parameter name="inc_y" value="18" />
+  <parameter name="square" value="0" />
+ </module>
  <connection
    kind="avalon"
    version="19.1"
-   start="onchip_mem_vga_Interface_0.avalon_master"
-   end="onchip_memory2_0.s2">
+   start="render_accelerator_0.avalon_master"
+   end="onchip_memory2_0.s1">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -739,8 +774,8 @@
  <connection
    kind="avalon"
    version="19.1"
-   start="hps_0.h2f_axi_master"
-   end="onchip_memory2_0.s1">
+   start="onchip_mem_vga_Interface_0.avalon_master"
+   end="onchip_memory2_0.s2">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -755,6 +790,15 @@
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
+   kind="avalon"
+   version="19.1"
+   start="hps_0.h2f_lw_axi_master"
+   end="render_accelerator_0.avalon_slave_hps">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0400" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
    kind="clock"
    version="19.1"
    start="clk_0.clk"
@@ -764,6 +808,11 @@
    version="19.1"
    start="clk_0.clk"
    end="onchip_mem_vga_Interface_0.clock_sink" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="clk_0.clk"
+   end="render_accelerator_0.clock_sink" />
  <connection
    kind="clock"
    version="19.1"
@@ -784,6 +833,11 @@
    version="19.1"
    start="clk_0.clk_reset"
    end="onchip_mem_vga_Interface_0.reset_sink" />
+ <connection
+   kind="reset"
+   version="19.1"
+   start="clk_0.clk_reset"
+   end="render_accelerator_0.reset_sink" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.enableEccProtection" value="FALSE" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />
