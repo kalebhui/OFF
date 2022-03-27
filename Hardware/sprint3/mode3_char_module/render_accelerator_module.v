@@ -59,19 +59,45 @@ module render_accelerator_module (
     end
 
 
-    ////// TODO : do the fsm
+    ////// FSM related wire and reg
     reg [4:0] state = 5'b00000;
-    //state bit 4 = write to memory
-    assign avalon_master_mem_write      = state[4];
-    assign avalon_master_mem_writedata  = color[7:0];
-
     reg [8:0] x_counter  = 9'b0;
     reg [7:0] y_counter  = 9'b0;
     wire [8:0] x_coord   = control_reg_1[8:0];
     wire [7:0] y_coord   = control_reg_1[16:9];
     wire [7:0] color     = control_reg_1[24:17];
-    wire [8:0] width    = control_reg_2[8:0];
-    wire [7:0] height   = control_reg_2[16:9];
+    wire [8:0] width;    //May change depending on mode and will be assigned in mux
+    wire [7:0] height;
+
+    //Character render module
+    wire [15:0]char_data [23:0]
+    wire [8:0] char_select = control_reg_2[8:0]; //character select, will only function in mode 0001(character)
+
+    //Switching width and height parameter for different mode
+    parameter char_width = 9'd16;
+    parameter char_height = 8'd24;
+
+    always_comb begin
+        case (mode_reg)
+            4'b0000: begin
+                //square mode
+                width     = control_reg_2[8:0];
+                height    = control_reg_2[16:9];
+                avalon_master_mem_write      = state[4]; //state bit 4 = write to memory
+                avalon_master_mem_writedata  = color[7:0]; //write data = color input
+            end
+            4'b0001: begin
+                width     = char_width;
+                height    = char_height;
+                avalon_master_mem_write = char_data[y_counter][x_counter];
+                avalon_master_mem_writedata = char_data[y_counter][x_counter]? color[7:0]; 8'b0;
+            end
+            default: begin
+                width     = 9'd320; //value that should be easy to debug
+                height    = 9'd240;
+            end
+        endcase
+    end
 
     wire [8:0] x_pos     = x_coord + x_counter;
     wire [7:0] y_pos     = y_coord + y_counter;   
@@ -81,6 +107,7 @@ module render_accelerator_module (
     parameter inc_y     = 5'b10010;
     parameter finish    = 5'b00011;
     parameter square    = 4'b0000;
+    parameter character = 4'b0001;
 
     always @(posedge clock_sink_clk) begin
         if(reset_sink_reset) begin
