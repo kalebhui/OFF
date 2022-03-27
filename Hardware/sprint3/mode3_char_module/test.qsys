@@ -105,6 +105,14 @@
          type = "String";
       }
    }
+   element test
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
 }
 ]]></parameter>
  <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
@@ -746,7 +754,7 @@
   <parameter name="simMemInitOnlyFilename" value="0" />
   <parameter name="singleClockOperation" value="true" />
   <parameter name="slave1Latency" value="1" />
-  <parameter name="slave2Latency" value="2" />
+  <parameter name="slave2Latency" value="1" />
   <parameter name="useNonDefaultInitFile" value="false" />
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
@@ -756,6 +764,9 @@
    kind="render_accelerator"
    version="1.0"
    enabled="1">
+  <parameter name="char_height" value="24" />
+  <parameter name="char_width" value="16" />
+  <parameter name="character" value="1" />
   <parameter name="finish" value="3" />
   <parameter name="idle" value="0" />
   <parameter name="inc_x" value="17" />

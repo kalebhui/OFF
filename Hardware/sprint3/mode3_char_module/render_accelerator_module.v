@@ -14,8 +14,8 @@ module render_accelerator_module (
 
         ///////    On-chip mem interface    //////
 		output    [17:0]   avalon_master_mem_address,  // address to on-chip-memory
-		output             avalon_master_mem_write,    //              .write
-		output    [7:0]    avalon_master_mem_writedata,    //              .write data
+		output reg             avalon_master_mem_write,    //              .write
+		output reg    [7:0]    avalon_master_mem_writedata,    //              .write data
         input              avalon_master_waitrequest,
 
         ///////    HPS control interface    //////
@@ -66,18 +66,75 @@ module render_accelerator_module (
     wire [8:0] x_coord   = control_reg_1[8:0];
     wire [7:0] y_coord   = control_reg_1[16:9];
     wire [7:0] color     = control_reg_1[24:17];
-    wire [8:0] width;    //May change depending on mode and will be assigned in mux
-    wire [7:0] height;
+    reg [8:0] width;    //May change depending on mode and will be assigned in mux
+    reg [7:0] height;
 
-    //Character render module
-    wire [15:0]char_data [23:0]
+    //character render module
+    wire [15:0] char_data[23:0];
     wire [8:0] char_select = control_reg_2[8:0]; //character select, will only function in mode 0001(character)
+    wire [15:0] n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15, n16, n17, n18, n19, n20, n21, n22, n23;
+
+    assign char_data[0]  = n0;
+    assign char_data[1]  = n1;
+    assign char_data[2]  = n2;
+    assign char_data[3]  = n3;
+    assign char_data[4]  = n4;
+    assign char_data[5]  = n5;
+    assign char_data[6]  = n6;
+    assign char_data[7]  = n7;
+    assign char_data[8]  = n8;
+    assign char_data[9]  = n9;
+    assign char_data[10] = n10;
+    assign char_data[11] = n11;
+    assign char_data[12] = n12;
+    assign char_data[13] = n13;
+    assign char_data[14] = n14;
+    assign char_data[15] = n15;
+    assign char_data[16] = n16;
+    assign char_data[17] = n17;
+    assign char_data[18] = n18;
+    assign char_data[19] = n19;
+    assign char_data[20] = n20;
+    assign char_data[21] = n21;
+    assign char_data[22] = n22;
+    assign char_data[23] = n23;
 
     //Switching width and height parameter for different mode
     parameter char_width = 9'd16;
     parameter char_height = 8'd24;
 
-    always_comb begin
+    //
+    dumb_cs cs_bitmap( //choose single chars or nums or signals
+        .clock_sink_clk(clock_sink_clk),         //    clock_sink.clk
+        .reset_sink_reset(reset_sink_reset),       //    reset_sink.reset
+        .select(char_select),
+        .n0(n0), 
+        .n1(n1), 
+        .n2(n2), 
+        .n3(n3), 
+        .n4(n4), 
+        .n5(n5), 
+        .n6(n6), 
+        .n7(n7), 
+        .n8(n8), 
+        .n9(n9), 
+        .n10(n10), 
+        .n11(n11), 
+        .n12(n12), 
+        .n13(n13), 
+        .n14(n14), 
+        .n15(n15), 
+        .n16(n16), 
+        .n17(n17), 
+        .n18(n18), 
+        .n19(n19), 
+        .n20(n20), 
+        .n21(n21), 
+        .n22(n22), 
+        .n23(n23)
+    );
+
+    always @(*) begin
         case (mode_reg)
             4'b0000: begin
                 //square mode
@@ -89,8 +146,8 @@ module render_accelerator_module (
             4'b0001: begin
                 width     = char_width;
                 height    = char_height;
-                avalon_master_mem_write = char_data[y_counter][x_counter];
-                avalon_master_mem_writedata = char_data[y_counter][x_counter]? color[7:0]; 8'b0;
+                avalon_master_mem_write = char_data[y_counter][width - x_counter];
+                avalon_master_mem_writedata = char_data[y_counter][width - x_counter]? color[7:0]: 8'b0;
             end
             default: begin
                 width     = 9'd320; //value that should be easy to debug
@@ -117,7 +174,7 @@ module render_accelerator_module (
                 //Idle state, ready to start new operation
                 idle    : begin
                     //Mode: Drawing Square, set up registers
-                    if(start_flag && (mode_reg == 4'b0000))begin
+                    if(start_flag && ( (mode_reg == 4'b0000) || (mode_reg == 4'b0001) ) )begin
                         state       <= inc_x;
                         ready_flag  <= 1'b0;
                         x_counter   <= 9'b0;
