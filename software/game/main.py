@@ -1,10 +1,12 @@
 from math import ceil
 from turtle import color
+import time
 import pygame
+import bitmaps
 
 pygame.init()
 clock = pygame.time.Clock()
-screen_width = 800
+screen_width = 640
 screen_height = 480
 tile_size = 20
 spawn_coords_p1 = (tile_size, screen_height - 140)
@@ -13,11 +15,12 @@ screen = pygame.display.set_mode((screen_width, screen_height)) #replace later w
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
 
 #default map setting
+#note this bitamp was for screen_width = 800 so it contains more cells than necessary
 bitmap = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -35,17 +38,91 @@ bitmap = [
     [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
-text_font = pygame.font.SysFont('Bauhaus 93', 30)
+text_font = pygame.font.SysFont('Bauhaus 93', 22)
 white = (255, 255, 255)
 
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     screen.blit(img, (x, y))
 
+PLAYER_SELECT = 0
+LEVEL_SELECT = 1
+GAMEPLAY = 2
 
+class Menu():
+    def __init__(self, player_select, level_select):
+        self.menu_tile_size = 10 #menu screens were created with this tile size
+        self.yellow_square = pygame.image.load('images/yellow.png')
+        self.red_square = pygame.image.load('images/red.png')
+        self.ice_square = pygame.image.load('images/ice.png')
+        self.trampoline_square = pygame.image.load('images/trampoline.png')
+        self.finish_square = pygame.image.load('images/finish.png')
+        self.scaled_finish_square = pygame.transform.scale(self.finish_square, (self.menu_tile_size, self.menu_tile_size)) #useful for converting tiles to green
+        self.player_select_tile_list = self.create_tile_list(player_select)
+        self.level_select_tile_list = self.create_tile_list(level_select)
+        self.current_menu_screen = PLAYER_SELECT
+        self.player_one_connect = False
+        self.player_two_connect = False
+
+    def update(self):
+        key = pygame.key.get_pressed()
+        if self.current_menu_screen == PLAYER_SELECT:
+            if self.player_one_connect and self.player_two_connect:
+                time.sleep(0.5) #to allow both P1 and P2 to turn green before going to the next screen
+                self.current_menu_screen = LEVEL_SELECT
+            elif key[pygame.K_1]:
+                self.convert_red_to_green_tiles(0, screen_height, screen_width // 2) #turns the red tiles to green so there is an indication that p1 has connected
+                self.player_one_connect = True
+            elif key[pygame.K_2]:
+                self.convert_red_to_green_tiles(screen_width // 2, screen_height, screen_width // 2) #turns the red tiles to green so there is an indication that p2 has connected
+                self.player_two_connect = True
+            for tile in self.player_select_tile_list:
+                screen.blit(tile[0], tile[1])
+        elif self.current_menu_screen == LEVEL_SELECT:
+            if key[pygame.K_1]:
+                self.current_menu_screen = GAMEPLAY
+            for tile in self.level_select_tile_list:
+                screen.blit(tile[0], tile[1])
+
+    def create_tile_list(self, data):
+        tile_list = []
+        for row in range(len(data)):
+            for col in range(len(data[0])):
+                tile = data[row][col]
+                if tile != 0:
+                    if tile == 1:
+                        img = pygame.transform.scale(self.yellow_square, (self.menu_tile_size, self.menu_tile_size))
+                    elif tile == 2:
+                        img = pygame.transform.scale(self.red_square, (self.menu_tile_size, self.menu_tile_size))
+                    elif tile == 3:
+                        img = pygame.transform.scale(self.ice_square, (self.menu_tile_size, self.menu_tile_size))
+                    elif tile == 4:
+                        img = pygame.transform.scale(self.trampoline_square, (self.menu_tile_size, self.menu_tile_size))
+                    elif tile == 5:
+                        img = pygame.transform.scale(self.finish_square, (self.menu_tile_size, self.menu_tile_size))
+                    img_rect = img.get_rect()
+                    img_rect.x = col * self.menu_tile_size
+                    img_rect.y = row * self.menu_tile_size
+                    tile = (img, img_rect, tile)
+                    tile_list.append(tile)
+        return tile_list
+
+    def convert_red_to_green_tiles(self, x, y, size):
+        if self.current_menu_screen == PLAYER_SELECT:
+            for i in range(len(self.player_select_tile_list)):
+                tile = self.player_select_tile_list[i]
+                if tile[2] == 2: #if it is a red tile
+                    if tile[1].x > x and tile[1].x <= x + size and tile[1].y < y and tile[1].y > y - size: #if it is range
+                        self.player_select_tile_list[i] = (self.scaled_finish_square, tile[1], 5) #convert it to a green square
+        elif self.current_menu_screen == LEVEL_SELECT:
+            for i in range(len(self.level_select_tile_list)):
+                tile = self.level_select_tile_list[i]
+                if tile[2] == 2: #if it is a red tile
+                    if tile[1].x > x and tile.x <= x + size and tile[1].y > y and tile[1].y <= y + size: #if it is range
+                        self.level_select_tile_list[i] = (self.scaled_finish_square, tile[1], 5) #convert it to a green square
 
 class World():
-    def __init__(self, data):
+    def __init__(self, data, level):
         self.default_tile_list = []
 
         #load images
@@ -58,6 +135,7 @@ class World():
         self.ice_square = pygame.image.load('images/ice.png')
         self.trampoline_square = pygame.image.load('images/trampoline.png')
         self.finish_square = pygame.image.load('images/finish.png')
+        self.level = level
 
         row_count = 0
         for row in data:
@@ -257,7 +335,8 @@ class Player():
         # draw player at current location
         screen.blit(self.playerImg, self.rect)
 
-world = World(bitmap)
+menu = Menu(bitmaps.player_select, bitmaps.level_select)
+world = World(bitmap, 1) #start at level 1
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
 playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
 
@@ -270,9 +349,12 @@ while open:
         if event.type == pygame.QUIT:
             open = False
 
-    if world.level_completed:
+    if menu.current_menu_screen != GAMEPLAY:
+        menu.update()
+
+    elif world.level_completed:
         draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
-        text_font, white, screen_width // 2 - 395, screen_height // 2)
+        text_font, white, screen_width // 2 - 300, screen_height // 2)
     #update blits of all objects
     else:
         world.update()
