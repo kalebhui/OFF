@@ -146,12 +146,14 @@ module render_accelerator_module (
             4'b0001: begin
                 width     = char_width;
                 height    = char_height;
-                avalon_master_mem_write = char_data[y_counter][width - x_counter];
-                avalon_master_mem_writedata = char_data[y_counter][width - x_counter]? color[7:0]: 8'b0;
+                avalon_master_mem_write = char_data[y_counter][width - x_counter - 1];
+                avalon_master_mem_writedata = char_data[y_counter][width - x_counter - 1] ? color[7:0]: 8'b0;
             end
             default: begin
                 width     = 9'd320; //value that should be easy to debug
                 height    = 9'd240;
+                avalon_master_mem_write     = 1'b0;
+                avalon_master_mem_writedata = 8'b0;
             end
         endcase
     end
