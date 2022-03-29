@@ -180,8 +180,7 @@ char get_keyvalue(int kbd_ptr) {
 int create_socket() {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
-    char buffer[buffer_size] = {0};
-    int bitmap_arr[bitmap_height][bitmap_width] = {0};
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
@@ -211,8 +210,7 @@ int create_socket() {
 
 void *receiver(void *arg) {
     char * buffer = malloc(buffer_size);
-    int bitmap_arr[bitmap_height][bitmap_width] = {0};
-    int sock = create_socket();
+    int sock = connect_socket();
     int valread;
     if(sock == -1) {
         return NULL;
@@ -228,7 +226,7 @@ void *receiver(void *arg) {
         int coords_row = 0;
         int coords_col = 0;
         int coords[1000][3] = {0}; //change size later
-        
+
         valread = read(sock, buffer, buffer_size);
 
         char * token = strtok(buffer, ",");
@@ -246,7 +244,8 @@ void *receiver(void *arg) {
             }
             token = strtok(NULL, ",");
         }
-        
+    }
+
         // for(int i = 0; i < 1000; i++) {
         //     for(int j = 0; j < 3; j++) {
         //         printf("%d, ", coords[i][j]);
