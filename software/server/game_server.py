@@ -4,10 +4,12 @@ import time
 import sys
 import pygame
 from collections import deque
+import os
 
-# SERVER = socket.gethostbyname(socket.gethostname())
-SERVER = '128.189.25.223'
-PORT = 5004
+os.environ["SDL_VIDEODRIVER"] = "dummy" #!!!! delete might be making the server slower
+
+SERVER = ''
+PORT = 3389
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "quit"
 player_one_inputs = deque() #stores user inputs
@@ -15,7 +17,6 @@ player_two_inputs = deque() #stores user inputs
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((SERVER, PORT))
-# server.bind(('', PORT))
 
 pygame.init()
 clock = pygame.time.Clock()
@@ -24,7 +25,7 @@ screen_height = 480
 tile_size = 20
 spawn_coords_p1 = (tile_size, screen_height - 140)
 spawn_coords_p2 = (20 * tile_size, 5 * tile_size)
-screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer
+screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer #!!!!
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
 
 #default map setting
@@ -58,7 +59,7 @@ white = (255, 255, 255)
 
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
-    screen.blit(img, (x, y))
+    screen.blit(img, (x, y)) #!!!!
 
 class World():
     def __init__(self, data):
@@ -128,7 +129,7 @@ class World():
         if key == 'r': # reset to default
             self.tile_list = self.default_tile_list.copy()
         for tile in self.tile_list:
-            screen.blit(tile[0], tile[1]) # draw each tile
+            screen.blit(tile[0], tile[1]) # draw each tile #!!!!
 
 class Player():
     def __init__(self, image_path, coordinate, playerNumber):
@@ -249,13 +250,13 @@ class Player():
             # key = pygame.key.get_pressed()
             #key = player_two_inputs[0] #maybe check len(queue) first?
 
-            if key == 'i':
+            if key == 'w':
                 change_y -= tile_size
-            if key == 'k':
+            if key == 's':
                change_y += tile_size
-            if key == 'j':
+            if key == 'a':
                 change_x -= tile_size
-            if key == 'l':
+            if key == 'd':
                 change_x += tile_size
             if key == '1':
                 self.block_type = 1
@@ -277,7 +278,7 @@ class Player():
                 self.rect.bottom = screen_height
 
         # draw player at current location
-        screen.blit(self.playerImg, self.rect)
+        screen.blit(self.playerImg, self.rect) #!!!!
 
 world = World(bitmap)
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
@@ -293,7 +294,7 @@ def run_game():
     open = True
     while open:
         clock.tick(20) # number of frames per sec
-        screen.fill((0, 0, 0)) #background colour
+        screen.fill((0, 0, 0)) #background colour #!!!!
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 open = False
@@ -311,6 +312,7 @@ def run_game():
             if player_two_inputs:
                 input_p2 = player_two_inputs[0]
                 player_two_inputs.popleft() #delete the latest action
+            # print(input_p1 + ' ... ' + input_p2) #!!!!
             world.update(input_p2)
             playerOne.update(input_p1)
             playerTwo.update(input_p2)
@@ -333,7 +335,7 @@ def receiver (conn, addr):
     connected = True
     while connected:
         # block thread until we get information from Client
-        message = conn.recv(1024).decode(FORMAT)
+        message = conn.recv(1).decode(FORMAT)
         if message == DISCONNECT_MESSAGE or not message:
             connected = False
             print("[" + str(addr) + "] " + DISCONNECT_MESSAGE)
@@ -354,14 +356,15 @@ def sender (conn, addr):
         # block thread until we get information from Client
         try:
             str_tilelist = ''
+            str_tilelist += f"{playerOne.rect.x},{playerOne.rect.y},-1,{playerTwo.rect.x},{playerTwo.rect.y},-2,"
             for tile in world.tile_list:
                 str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2]},"
                 # str_tilelist += "." + tile_str
             str_tilelist += "&"
-            print(str_tilelist)
+            # print(str_tilelist)
             conn.send(str_tilelist.encode())
-            
-            time.sleep(5)
+            conn.recv(1).decode(FORMAT) #!!!!
+            # time.sleep(5)
         except socket.error:
             connected = False
             print("[" + str(addr) + "] " + DISCONNECT_MESSAGE)
