@@ -6,16 +6,44 @@ import bitmaps
 
 pygame.init()
 clock = pygame.time.Clock()
-screen_width = 640
-screen_height = 480
-tile_size = 20
+
+# Dimension setting
+tile_size = 10
+status_tile_size = 10
+bar_height = tile_size // 3
+screen_width = 320
+screen_height = 240
+game_height = screen_height - 3 * tile_size - bar_height
+
+# Spawn settings
 spawn_coords_p1 = (tile_size, screen_height - 140)
 spawn_coords_p2 = (20 * tile_size, 5 * tile_size)
+
+# Movement settings
+reg_change_x = 7
+reg_change_y = 6
+tramp_change_y = 9
+ice_change_x = 5 
+ice_max_change_x = 3
+gravity = 0.5
+
+# Level settings
+reg_blk_count = 10
+ice_blk_count = 9
+tramp_blk_count = 8
+
+avail_blocks = {} #store counts in hashmap
+if (reg_blk_count):
+    avail_blocks[1] = reg_blk_count
+if (ice_blk_count):
+    avail_blocks[3] = ice_blk_count
+if (tramp_blk_count):
+    avail_blocks[4] = tramp_blk_count
+
+#default map setting
 screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
 
-#default map setting
-#note this bitamp was for screen_width = 800 so it contains more cells than necessary
 bitmap = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -38,7 +66,7 @@ bitmap = [
     [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
-text_font = pygame.font.SysFont('Bauhaus 93', 22)
+text_font = pygame.font.SysFont('Bauhaus 93', 24)
 white = (255, 255, 255)
 
 def draw_text(text, font, text_col, x, y):
@@ -51,15 +79,15 @@ GAMEPLAY = 2
 
 class Menu():
     def __init__(self, player_select, level_select):
-        self.menu_tile_size = 10 #menu screens were created with this tile size
+        self.menu_tile_size = tile_size / 2 #menu screens were created with this tile size
         self.yellow_square = pygame.image.load('images/yellow.png')
         self.red_square = pygame.image.load('images/red.png')
         self.ice_square = pygame.image.load('images/ice.png')
         self.trampoline_square = pygame.image.load('images/trampoline.png')
         self.finish_square = pygame.image.load('images/finish.png')
         self.scaled_finish_square = pygame.transform.scale(self.finish_square, (self.menu_tile_size, self.menu_tile_size)) #useful for converting tiles to green
-        self.player_select_tile_list = self.create_tile_list(player_select)
-        self.level_select_tile_list = self.create_tile_list(level_select)
+        self.player_select_tile_list = create_tile_list(self, player_select, self.menu_tile_size, self.menu_tile_size)
+        self.level_select_tile_list = create_tile_list(self, level_select, self.menu_tile_size, self.menu_tile_size)
         self.current_menu_screen = PLAYER_SELECT
         self.player_one_connect = False
         self.player_two_connect = False
@@ -84,29 +112,6 @@ class Menu():
             for tile in self.level_select_tile_list:
                 screen.blit(tile[0], tile[1])
 
-    def create_tile_list(self, data):
-        tile_list = []
-        for row in range(len(data)):
-            for col in range(len(data[0])):
-                tile = data[row][col]
-                if tile != 0:
-                    if tile == 1:
-                        img = pygame.transform.scale(self.yellow_square, (self.menu_tile_size, self.menu_tile_size))
-                    elif tile == 2:
-                        img = pygame.transform.scale(self.red_square, (self.menu_tile_size, self.menu_tile_size))
-                    elif tile == 3:
-                        img = pygame.transform.scale(self.ice_square, (self.menu_tile_size, self.menu_tile_size))
-                    elif tile == 4:
-                        img = pygame.transform.scale(self.trampoline_square, (self.menu_tile_size, self.menu_tile_size))
-                    elif tile == 5:
-                        img = pygame.transform.scale(self.finish_square, (self.menu_tile_size, self.menu_tile_size))
-                    img_rect = img.get_rect()
-                    img_rect.x = col * self.menu_tile_size
-                    img_rect.y = row * self.menu_tile_size
-                    tile = (img, img_rect, tile)
-                    tile_list.append(tile)
-        return tile_list
-
     def convert_red_to_green_tiles(self, x, y, size):
         if self.current_menu_screen == PLAYER_SELECT:
             for i in range(len(self.player_select_tile_list)):
@@ -121,49 +126,94 @@ class Menu():
                     if tile[1].x > x and tile.x <= x + size and tile[1].y > y and tile[1].y <= y + size: #if it is range
                         self.level_select_tile_list[i] = (self.scaled_finish_square, tile[1], 5) #convert it to a green square
 
+def create_tile_list(self, data, size_x, size_y):
+        tile_list = []
+        for row in range(len(data)):
+            for col in range(len(data[0])):
+                tile = data[row][col]
+                if tile != 0:
+                    if tile == 1:
+                        img = pygame.transform.scale(self.yellow_square, (size_x, size_y))
+                    elif tile == 2:
+                        img = pygame.transform.scale(self.red_square, (size_x, size_y))
+                    elif tile == 3:
+                        img = pygame.transform.scale(self.ice_square, (size_x, size_y))
+                    elif tile == 4:
+                        img = pygame.transform.scale(self.trampoline_square, (size_x, size_y))
+                    elif tile == 5:
+                        img = pygame.transform.scale(self.finish_square, (size_x, size_y))
+                    img_rect = img.get_rect()
+                    img_rect.x = col * size_x
+                    img_rect.y = row * size_y
+                    tile = (img, img_rect, tile)
+                    tile_list.append(tile)
+        return tile_list
+
+def create_status_bar(self, data, size_x, size_y):
+    offset = 0
+    tile_list = []
+    for key in data:
+        if key == 1:
+            img = pygame.transform.scale(self.yellow_square, (size_x, size_y))
+        elif key == 2:
+            img = pygame.transform.scale(self.red_square, (size_x, size_y))
+        elif key == 3:
+            img = pygame.transform.scale(self.ice_square, (size_x, size_y))
+        elif key == 4:
+            img = pygame.transform.scale(self.trampoline_square, (size_x, size_y))
+        elif key == 5:
+            img = pygame.transform.scale(self.finish_square, (size_x, size_y))
+        img_rect = img.get_rect()
+        # space out blocks horizontally
+        img_rect.x = size_x * (offset * 3 + 2)
+        # center the blocks vertically
+        img_rect.centery = game_height + (screen_height - game_height) // 2 + bar_height 
+        block = (img, img_rect, key)
+        tile_list.append(block)
+        offset += 1
+
+    # draw the horizontal line accross the screen
+    img = pygame.transform.scale(self.status_border, (screen_width, bar_height))
+    img_rect = img.get_rect()
+    img_rect.x = 0
+    img_rect.y = game_height
+    tile_list.append((img, img_rect, -1))
+
+    return tile_list
+
 class World():
     def __init__(self, data, level):
         self.default_tile_list = []
-
-        #load images
+        self.default_status_tile_list =[]
         self.start_time = pygame.time.get_ticks()
         self.finish_time = -1
         self.level_completed = False
         self.blocks_placed = 0
+        self.level = level
+
+        #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
         self.red_square = pygame.image.load('images/red.png')
         self.ice_square = pygame.image.load('images/ice.png')
         self.trampoline_square = pygame.image.load('images/trampoline.png')
         self.finish_square = pygame.image.load('images/finish.png')
-        self.level = level
-
-        row_count = 0
-        for row in data:
-            col_count = 0
-            for tile in row:
-                if tile != 0:
-                    if tile == 1:
-                        img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
-                    elif tile == 2:
-                        img = pygame.transform.scale(self.red_square, (tile_size, tile_size))
-                    elif tile == 3:
-                        img = pygame.transform.scale(self.ice_square, (tile_size, tile_size))
-                    elif tile == 4:
-                        img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
-                    elif tile == 5:
-                        img = pygame.transform.scale(self.finish_square, (tile_size, tile_size))
-                    img_rect = img.get_rect()
-                    img_rect.x = col_count * tile_size
-                    img_rect.y = row_count * tile_size
-                    tile = (img, img_rect, tile)
-                    self.default_tile_list.append(tile)
-                col_count += 1
-            row_count += 1
+        self.status_border = pygame.image.load('images/status-border.png')
+        self.default_tile_list = create_tile_list(self, data, tile_size, tile_size) + create_status_bar(self, avail_blocks, status_tile_size, status_tile_size)
+        self.default_avail_blocks = avail_blocks.copy()
+        self.avail_blocks = avail_blocks.copy()
         self.tile_list = self.default_tile_list.copy()
 
     def update(self):
         draw_text(str((pygame.time.get_ticks() - self.start_time) / 1000), text_font, white, tile_size - 10, 10) #timer for level
-
+        
+        # draw block counts
+        offset = 0
+        for key in self.avail_blocks:
+            xcoord = status_tile_size * (offset * 3 + 2)
+            ycoord = game_height + (screen_height - game_height) // 2 + bar_height
+            draw_text(str(self.avail_blocks[key]), text_font, white, xcoord, ycoord)
+            offset += 1
+        
         #check if p1 finished the level
         for tile in world.tile_list:
             if tile[1].colliderect(playerOne.rect.x, playerOne.rect.y + 1, playerOne.width, playerOne.height):
@@ -172,21 +222,41 @@ class World():
                     self.level_completed = True
 
         key = pygame.key.get_pressed()
+        empty = 0
         if key[pygame.K_SPACE]: # place block
             if not playerTwo.in_block(): #makes sure you can't place blocks over each other. maybe not necessary?
                 if(playerTwo.block_type == 1): #normal square
                     img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
+                    if (self.avail_blocks[playerTwo.block_type] == 0):
+                        empty = 1
+                    else:
+                        self.avail_blocks[playerTwo.block_type] -= 1
                 elif(playerTwo.block_type == 3): #ice square
                     img = pygame.transform.scale(self.ice_square, (tile_size, tile_size))
+                    if (self.avail_blocks[playerTwo.block_type] == 0):
+                        empty = 1
+                    else:
+                        self.avail_blocks[playerTwo.block_type] -= 1
                 elif(playerTwo.block_type == 4): #trampoline square
                     img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
-                img_rect = img.get_rect()
-                img_rect.x = playerTwo.rect.x
-                img_rect.y = playerTwo.rect.y
-                self.tile_list.append((img, img_rect, playerTwo.block_type)) # add new block to tile list
-                self.blocks_placed += 1
+                    if (self.avail_blocks[playerTwo.block_type] == 0):
+                        empty = 1
+                    else:
+                        self.avail_blocks[playerTwo.block_type] -= 1
+                
+                #only place blocks if there are any left
+                if not empty:
+                    img_rect = img.get_rect()
+                    img_rect.x = playerTwo.rect.x
+                    img_rect.y = playerTwo.rect.y
+                    self.tile_list.append((img, img_rect, playerTwo.block_type)) # add new block to tile list
+                    self.blocks_placed += 1
+
         if key[pygame.K_r]: # reset to default
             self.tile_list = self.default_tile_list.copy()
+            self.avail_blocks = self.default_avail_blocks.copy()
+            print(self.avail_blocks)
+
         for tile in self.tile_list:
             screen.blit(tile[0], tile[1]) # draw each tile
 
@@ -234,23 +304,22 @@ class Player():
 
             if key[pygame.K_w]:
                 if onTrampoline:
-                    self.vel_y = -17
+                    self.vel_y = -tramp_change_y
                 elif onBlock:
-                    self.vel_y = -12
-
+                    self.vel_y = -reg_change_y
             if key[pygame.K_a]:
                 if onIce:
-                   self.vel_x = max(self.vel_x - 1, -15) #max ice speed
-                   change_x -= 7
+                    self.vel_x = max(self.vel_x - 1, -reg_change_x) #max ice speed
+                    change_x -= ice_max_change_x
                 else:
-                    change_x -= 10 
+                    change_x -= ice_change_x 
 
             if key[pygame.K_d]:
                 if onIce:
-                   self.vel_x = min(self.vel_x + 1, 15) #max ice speed
-                   change_x += 7
+                    self.vel_x = min(self.vel_x + 1, reg_change_x) #max ice speed
+                    change_x += ice_max_change_x
                 else:
-                    change_x += 10 
+                    change_x += ice_change_x 
 
             if onBlock and not onIce:
                 self.vel_x = 0 #shouldn't continue sliding if we are not on ice
@@ -263,14 +332,14 @@ class Player():
             
             change_x += self.vel_x
 
-            if change_x > 15:
-                change_x = 15
-            elif change_x < -15:
-                change_x = -15
+            if change_x > reg_change_x:
+                change_x = reg_change_x
+            elif change_x < -reg_change_x:
+                change_x = -reg_change_x
 
-            self.vel_y += 1
-            if self.vel_y > 12:
-                self.vel_y = 12
+            self.vel_y += gravity
+            if self.vel_y > reg_change_y:
+                self.vel_y = reg_change_y
             change_y += self.vel_y
 
             #collision detection with the other blocks
@@ -294,8 +363,8 @@ class Player():
             self.rect.y += change_y
             if self.rect.top <= 0:
                 self.rect.top = 0
-                self.vel_y = 0
-            elif self.rect.bottom >= screen_height: #respawn when touch bottom of screen
+                self.vel_y = gravity
+            elif self.rect.bottom >= game_height: #respawn when touch bottom of screen
                 self.rect.x = self.spawn_coords[0]
                 self.rect.y = self.spawn_coords[1]
         
@@ -308,7 +377,7 @@ class Player():
             if key[pygame.K_i]:
                 change_y -= tile_size
             if key[pygame.K_k]:
-               change_y += tile_size
+                change_y += tile_size
             if key[pygame.K_j]:
                 change_x -= tile_size
             if key[pygame.K_l]:
@@ -329,8 +398,8 @@ class Player():
             self.rect.y += change_y
             if self.rect.top <= 0:
                 self.rect.top = 0
-            elif self.rect.bottom >= screen_height:
-                self.rect.bottom = screen_height
+            elif self.rect.bottom >= game_height:
+                self.rect.bottom = game_height
 
         # draw player at current location
         screen.blit(self.playerImg, self.rect)
@@ -353,6 +422,7 @@ while open:
         menu.update()
 
     elif world.level_completed:
+        #rewrite to fit screen
         draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
         text_font, white, screen_width // 2 - 300, screen_height // 2)
     #update blits of all objects
