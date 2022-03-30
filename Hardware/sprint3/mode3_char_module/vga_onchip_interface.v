@@ -14,7 +14,7 @@ module vga_onchip_interface (
 		input  wire        reset_sink_reset,       //    reset_sink.reset
 		output wire [17:0] avalon_master_address,  // avalon_master.address
 		output wire        avalon_master_read,     //              .read
-		input  wire [31:0] avalon_master_readdata, //              .readdata
+		input  wire [7:0] avalon_master_readdata, //              .readdata
 		input  wire 	   avalon_master_waitrequest,
 
 		output wire [7:0]  conduit_test,            //   conduit_end.new_signal
@@ -53,15 +53,21 @@ module vga_onchip_interface (
 	assign x_2 = p2[8:0];
 	assign y_2 = p2[16:9];
 
-	parameter CHAR_WIDTH = 40;
-	parameter CHAR_HEIGHT = 40;
-	parameter CYAN_R        = 8'h00;
-	parameter CYAN_G        = 8'hff;
-	parameter CYAN_B        = 8'hff; 
-	parameter PURPLE_R      = 8'ha0;
-	parameter PURPLE_G      = 8'h20;
-	parameter PURPLE_B      = 8'hf0;
+	//Parameters for character movement acceleration
+	parameter CHAR_WIDTH = 9'd10;	//Character width and height, in actual resolution, not frame buffer resolution
+	parameter CHAR_HEIGHT = 9'd10;
+	parameter CHAR2_R        = 8'h00;  //cyan
+	parameter CHAR2_G        = 8'hff;  
+	parameter CHAR2_B        = 8'hff; 
+	parameter CHAR1_R      	 = 8'ha0;  //purple
+	parameter CHAR1_G        = 8'h20;
+	parameter CHAR1_B        = 8'hf0;
+	parameter EYE_R			 = 8'hff;  //eye color, white
+	parameter EYE_G			 = 8'hff;
+	parameter EYE_B			 = 8'hff;
 
+
+	/////////////////  logic for rendering character   //////////////////
 	always@(posedge VGA_CLK or posedge reset_sink_reset) begin
 	if(reset_sink_reset == 1'b1)
 		begin
@@ -70,20 +76,34 @@ module vga_onchip_interface (
 			video_b <= 8'h00;
 		end
 	else if(x_pos >= x_1 * 2
-		   && x_pos <= x_1 * 2 + CHAR_WIDTH 
-		   && y_pos > y_1 * 2
-		   && y_pos <= y_1 * 2 + CHAR_HEIGHT)begin
-				video_r <= PURPLE_R;
-				video_g <= PURPLE_G;
-				video_b <= PURPLE_B;
+		   && x_pos < x_1 * 2 + CHAR_WIDTH 
+		   && y_pos >= y_1 * 2
+		   && y_pos < y_1 * 2 + CHAR_HEIGHT)begin
+			   if (char_bitmap[y_1_relative][x_1_relative]) begin
+				    video_r <= EYE_R;
+					video_g <= EYE_G;
+					video_b <= EYE_B;
+			   end else begin
+				   	video_r <= CHAR1_R;
+					video_g <= CHAR1_G;
+					video_b <= CHAR1_B;
+			   end
+				
 		end
 	else if(x_pos >= x_2 * 2
-		   && x_pos <= x_2 * 2 + CHAR_WIDTH 
-		   && y_pos > y_2 * 2
-		   && y_pos <= y_2 * 2 + CHAR_HEIGHT)begin
-				video_r <= CYAN_R;
-				video_g <= CYAN_G;
-				video_b <= CYAN_B;
+		   && x_pos < x_2 * 2 + CHAR_WIDTH 
+		   && y_pos >= y_2 * 2
+		   && y_pos < y_2 * 2 + CHAR_HEIGHT)begin
+			   if (char_bitmap[y_2_relative][x_2_relative]) begin
+				    video_r <= EYE_R;
+					video_g <= EYE_G;
+					video_b <= EYE_B;
+			   end else begin
+				   	video_r <= CHAR2_R;
+					video_g <= CHAR2_G;
+					video_b <= CHAR2_B;
+			   end
+				
 		end	
 	else 
 		begin
@@ -95,10 +115,29 @@ end
 
 	////////////// Character movement //////////////
 
-
-	assign avalon_master_address = {video_address[17:2], {2'b00}};
+	assign avalon_master_address = video_address;
 
 	assign conduit_test = avalon_master_readdata[7:0] | 8'b01000000;
+
+	//Char bitmap:
+
+	wire [8:0] x_1_relative, y_1_relative, x_2_relative, y_2_relative;
+	assign x_1_relative = (x_pos[9:1] - x_1); //relative location to each block for bitmap
+	assign y_1_relative = (y_pos[9:1] - y_1);
+	assign x_2_relative = (x_pos[9:1] - x_2); 
+	assign y_2_relative = (y_pos[9:1] - y_2);
+
+	wire[9:0] char_bitmap [9:0]; //10 * 10 bitmap for char
+	assign char_bitmap[0] = 10'b0000000000;
+	assign char_bitmap[1] = 10'b0010001000;
+	assign char_bitmap[2] = 10'b0010001000;
+	assign char_bitmap[3] = 10'b0010001000;
+	assign char_bitmap[4] = 10'b0010001000;
+	assign char_bitmap[5] = 10'b0000000000;
+	assign char_bitmap[6] = 10'b0000000000;
+	assign char_bitmap[7] = 10'b0001111100;
+	assign char_bitmap[8] = 10'b0000000000;
+	assign char_bitmap[9] = 10'b0000000000;
 
 
 	///////////// Edge Detector for read ///////////
@@ -149,16 +188,10 @@ end
 
 	///////////// VGA color Generator  ////////////
 	wire[17:0] 					video_address;
-	reg[7:0]					pixel_data;
+	wire[7:0]					pixel_data;
 	assign video_address = {y_pos[9:1] , x_pos[9:1]};	//resulotion in frame buffer is half of display resolution
 														//divide position by 2
-	always @(*) begin
-		case (video_address[1:0])
-			2'b00: pixel_data = avalon_master_readdata[7:0];
-			2'b01: pixel_data = avalon_master_readdata[15:8];
-			2'b10: pixel_data = avalon_master_readdata[23:16];
-			2'b11: pixel_data = avalon_master_readdata[31:24];
-		endcase
-	end
+
+	assign pixel_data = avalon_master_readdata;
 
 endmodule
