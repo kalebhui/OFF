@@ -38,8 +38,7 @@ void * listen_kbd(void * args){
     int fd = -1;
     struct input_event *kbd_event;
     int ret = 0;
-    //struct timeval timeout;
-    //fd_set event_set;
+
     fd = open(KBD_EVENT, O_RDONLY);
     if(fd < 0){
         printf("open file %s failed\n", KBD_EVENT);
@@ -73,106 +72,106 @@ char get_keyvalue(int kbd_ptr){
     char key_value;
     switch(kbd_ptr){
         case 0x7001a:
-        key_value = 'w';
-        break;
+            key_value = 'w';
+            break;
         case 0x11:
-        key_value = 'w';
-        break;
+            key_value = 'w';
+            break;
         case 0x70004:
-        key_value = 'a';
-        break;
+            key_value = 'a';
+            break;
         case 0x1e:
-        key_value = 'a';
-        break;
+            key_value = 'a';
+            break;
         case 0x70016:
-        key_value = 's';
-        break;
+            key_value = 's';
+            break;
         case 0x1f:
-        key_value = 's';
-        break;
+            key_value = 's';
+            break;
         case 0x70007:
-        key_value = 'd';
-        break;
+            key_value = 'd';
+            break;
         case 0x20:
-        key_value = 'd';
-        break;
+            key_value = 'd';
+            break;
         case 0x7002c:
-        key_value = 'p'; //space
-        break;
+            key_value = 'p'; //space
+            break;
         case 0x39:
-        key_value = 'p';
-        break;
+            key_value = 'p';
+            break;
         case 0x70027:
-        key_value = '0';
-        break;
+            key_value = '0';
+            break;
         case 0xb:
-        key_value = '0';
-        break;
+            key_value = '0';
+            break;
         case 0x7001e:
-        key_value = '1';
-        break;
+            key_value = '1';
+            break;
         case 0x02:
-        key_value = '1';
-        break;
+            key_value = '1';
+            break;
         case 0x7001f:
-        key_value = '2';
-        break;
+            key_value = '2';
+            break;
         case 0x03:
-        key_value = '2';
-        break;
+            key_value = '2';
+            break;
         case 0x70020:
-        key_value = '3';
-        break;
+            key_value = '3';
+            break;
         case 0x04:
-        key_value = '3';
-        break;
+            key_value = '3';
+            break;
         case 0x70021:
-        key_value = '4';
-        break;
+            key_value = '4';
+            break;
         case 0x05:
-        key_value = '4';
-        break;
+            key_value = '4';
+            break;
         case 0x70022:
-        key_value = '5';
-        break;
+            key_value = '5';
+            break;
         case 0x06:
-        key_value = '5';
-        break;
+            key_value = '5';
+            break;
         case 0x70023:
-        key_value = '6';
-        break;
+            key_value = '6';
+            break;
         case 0x07:
-        key_value = '6';
-        break;
+            key_value = '6';
+            break;
         case 0x70024:
-        key_value = '7';
-        break;
+            key_value = '7';
+            break;
         case 0x08:
-        key_value = '7';
-        break;
+            key_value = '7';
+            break;
         case 0x70025:
-        key_value = '8';
-        break;
+            key_value = '8';
+            break;
         case 0x09:
-        key_value = '8';
-        break;
+            key_value = '8';
+            break;
         case 0x70026:
-        key_value = '9';
-        break;
+            key_value = '9';
+            break;
         case 0xa:
-        key_value = '9';
-        break;
+            key_value = '9';
+            break;
         case 0x70028:
-        key_value = 'e'; //enter
-        break;
+            key_value = 'e'; //enter
+            break;
         case 0x1c:
-        key_value = 'e';
-        break;
+            key_value = 'e';
+            break;
         default:
-        key_value = 0;
-        // default statements
+            key_value = '/';
+            // default statements
         }
-return key_value;
+    return key_value;
 }
 
 int create_socket() {
@@ -270,7 +269,6 @@ void *sender(void *arg) {
 	}
 
     while (1) {
-		// scanf("%s" , message);
         int signal = 1;
         while (1) {
             if (cur_key != '/') {
