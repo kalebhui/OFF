@@ -96,11 +96,18 @@ end
 	////////////// Character movement //////////////
 
 
-	assign avalon_master_address = video_address;
-
-	assign avalon_master_read = 1'b1;
+	assign avalon_master_address = {video_address[17:2], {2'b00}};
 
 	assign conduit_test = avalon_master_readdata[7:0] | 8'b01000000;
+
+
+	///////////// Edge Detector for read ///////////
+	reg[17:0] address_delay;
+	always @(posedge clock_sink_clk) begin
+		address_delay <= avalon_master_address;
+	end
+
+	assign avalon_master_read = (address_delay != avalon_master_address);
 
 
 	///////////// VGA timing Generator  ////////////
@@ -142,9 +149,16 @@ end
 
 	///////////// VGA color Generator  ////////////
 	wire[17:0] 					video_address;
-	wire[7:0]					pixel_data;
+	reg[7:0]					pixel_data;
 	assign video_address = {y_pos[9:1] , x_pos[9:1]};	//resulotion in frame buffer is half of display resolution
 														//divide position by 2
-	assign pixel_data = avalon_master_readdata[7:0];	//8bit color data for pixel
+	always @(*) begin
+		case (video_address[1:0])
+			2'b00: pixel_data = avalon_master_readdata[7:0];
+			2'b01: pixel_data = avalon_master_readdata[15:8];
+			2'b10: pixel_data = avalon_master_readdata[23:16];
+			2'b11: pixel_data = avalon_master_readdata[31:24];
+		endcase
+	end
 
 endmodule
