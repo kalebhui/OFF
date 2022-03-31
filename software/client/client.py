@@ -9,13 +9,13 @@ s = socket.socket()
 port = 3389              
  
 # connect to the server on local computer
-s.connect(('104.196.252.18', port))
+s.connect(('35.212.170.255', port))
  
 pygame.init()
 clock = pygame.time.Clock()
-screen_width = 800
-screen_height = 480
-tile_size = 20
+screen_width = 320
+screen_height = 240
+tile_size = 10
 screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer #!!!!
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
 

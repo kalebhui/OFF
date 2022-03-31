@@ -405,7 +405,6 @@ class Player():
         screen.blit(self.playerImg, self.rect)
 
 menu = Menu(bitmaps.player_select, bitmaps.level_select)
-world = World(bitmap, 1) #start at level 1
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
 playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
 
