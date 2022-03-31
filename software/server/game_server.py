@@ -25,8 +25,7 @@ screen_height = 240
 tile_size = 10
 spawn_coords_p1 = (tile_size, screen_height - 140)
 spawn_coords_p2 = (20 * tile_size, 5 * tile_size)
-screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer #!!!!
-# pygame.display.set_caption("OFF: Outwit or Fall Flat")
+screen = pygame.display.set_mode((screen_width, screen_height))
 
 #default map setting
 bitmap = [
@@ -61,10 +60,6 @@ str_bitmap = ''.join(str(item) for innerlist in bitmap for item in innerlist)
 
 text_font = pygame.font.SysFont('Bauhaus 93', 30)
 white = (255, 255, 255)
-
-# def draw_text(text, font, text_col, x, y):
-#     img = font.render(text, True, text_col)
-#     screen.blit(img, (x, y)) #!!!!
 
 class World():
     def __init__(self, data):
@@ -104,10 +99,8 @@ class World():
                 col_count += 1
             row_count += 1
         self.tile_list = self.default_tile_list.copy()
-        # print(self.tile_list) #!!!
 
     def update(self, key):
-        #draw_text(str((pygame.time.get_ticks() - self.start_time) / 1000), text_font, white, tile_size - 10, 10) #timer for level
 
         #check if p1 finished the level
         for tile in world.tile_list:
@@ -116,8 +109,6 @@ class World():
                     self.finish_time = pygame.time.get_ticks() - self.start_time
                     self.level_completed = True
 
-        #key = pygame.key.get_pressed()
-        #key = player_two_inputs[0] #get key press in front of the queue
         if key == 'p': # place block
             if not playerTwo.in_block(): #makes sure you can't place blocks over each other. maybe not necessary?
                 if(playerTwo.block_type == 1): #normal square
@@ -133,8 +124,6 @@ class World():
                 self.blocks_placed += 1
         if key == 'r': # reset to default
             self.tile_list = self.default_tile_list.copy()
-        # for tile in self.tile_list:
-        #     screen.blit(tile[0], tile[1]) # draw each tile #!!!!
 
 class Player():
     def __init__(self, image_path, coordinate, playerNumber):
@@ -148,7 +137,7 @@ class Player():
         self.vel_y = 0
         self.vel_x = 0
         self.jumped = False
-        self.spawn_coords = coordinate # remember starting coordinates for respawn
+        self.spawn_coords = coordinate # store starting coordinates for respawn
         self.block_type = 1 #default block type
 
     #checks if the player is in a block
@@ -175,10 +164,6 @@ class Player():
                     elif tile[2] == 4:
                         onTrampoline = True
 
-            # if keystroke is pressed check whether its right or left
-            
-            # key = pygame.key.get_pressed()
-            #key = player_one_inputs[0]
             if key == 'w':
                 if onTrampoline:
                     self.vel_y = -17
@@ -250,11 +235,6 @@ class Player():
             change_x = 0
             change_y = 0
 
-            # if keystroke is pressed check whether its right or left
-            
-            # key = pygame.key.get_pressed()
-            #key = player_two_inputs[0] #maybe check len(queue) first?
-
             if key == 'w':
                 change_y -= tile_size
             if key == 's':
@@ -282,24 +262,15 @@ class Player():
             elif self.rect.bottom >= screen_height:
                 self.rect.bottom = screen_height
 
-        # draw player at current location
-        # screen.blit(self.playerImg, self.rect) #!!!!
-
 world = World(bitmap)
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
 playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
 
 # game loop, will continue until quit
 def run_game():
-
-    # world = World(bitmap)
-    # playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
-    # playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
-
     open = True
     while open:
         clock.tick(20) # number of frames per sec
-        # screen.fill((0, 0, 0)) #background colour #!!!!
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 open = False
@@ -322,14 +293,17 @@ def run_game():
             playerOne.update(input_p1)
             playerTwo.update(input_p2)
 
-        # pygame.display.update() #!!!!
-
 def receiver (conn, addr):
-    
     playerNum = -1
-    while playerNum == -1:
-        message = conn.recv(1).decode(FORMAT)
-        message = int(message)
+    while playerNum == -1: #!!!! right now two players can connect to 1 or 2
+        flag = True
+        while flag:
+            try:
+                message = conn.recv(1).decode(FORMAT)
+                message = int(message)
+                flag = False
+            except:
+                print("User input invalid: Requires 1 or 2")
         if message == 1:
             print("[" + str(addr) + "] SET TO P1")
             playerNum = 1
@@ -356,7 +330,6 @@ def receiver (conn, addr):
 
 def sender (conn, addr):
     connected = True
-
     while connected:
         # block thread until we get information from Client
         try:
@@ -364,42 +337,36 @@ def sender (conn, addr):
             str_tilelist += f"{playerOne.rect.x},{playerOne.rect.y},-1,{playerTwo.rect.x},{playerTwo.rect.y},-2,"
             for tile in world.tile_list:
                 str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2]},"
-                # str_tilelist += "." + tile_str
             str_tilelist += "&"
             conn.send(str_tilelist.encode())
             conn.recv(1).decode(FORMAT) #!!!!
-            # time.sleep(5)
         except socket.error:
             connected = False
-            print("[" + str(addr) + "] " + DISCONNECT_MESSAGE)
+            print("[" + str(addr) + "] " + DISCONNECT_MESSAGE) #!!!!
     conn.close()
 
 def handle_client(conn, addr):
     print("[NEW CONNECTION] " + str(addr) + " connected")
-
+    
     message = conn.recv(1).decode(FORMAT)
     message = int(message)
     if message == 1:
-        receiver(conn, addr) #i am receiving messages
+        receiver(conn, addr)
     elif message == 0:
-        sender(conn, addr) #i am sending messages
+        sender(conn, addr)
     else:
         print("ERROR")
 
 def run_server():
-    # main_thread = threading.Thread(target=run_game, args=())
-    # main_thread.start()
-    # print("[GAME STARTED]")
-
     server.listen(5)
     print("[LISTENING]")
     count = 0
-    while count < 4: #change to 5 later
+    while count < 5:
         # Establish connection with client.
         conn, addr = server.accept()
         thread = threading.Thread(target=handle_client, args=(conn,addr))
         thread.start()
-        print("[ACTIVE CONNECTIONS] " + str(threading.activeCount() - 1)) # Don't include main thread
+        print("[ACTIVE CONNECTIONS] " + str(threading.activeCount() - 1)) # Doesn't include main thread
         count = count + 1
 
     run_game()
