@@ -206,7 +206,7 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.camera = Camera(level, screen_width + 50)
+        self.camera = Camera(level, screen_width + 200)
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -275,10 +275,14 @@ class World():
             print(self.avail_blocks)
 
         for tile in self.tile_list:
-            if self.camera.onScreen(tile[1]):
-                camera_adjusted_rect = tile[1].copy()
-                camera_adjusted_rect.x -= self.camera.leftmost_x
-                screen.blit(tile[0], camera_adjusted_rect) # draw each tile
+            if tile[2] == -1: #to keep the status bar in view
+                screen.blit(tile[0], tile[1])
+            elif tile[1].y > game_height: #if the block is part of the status bar
+                screen.blit(tile[0], tile[1])
+            elif self.camera.onScreen(tile[1]): #if the tile is within camera view
+                    camera_adjusted_rect = tile[1].copy()
+                    camera_adjusted_rect.x -= self.camera.leftmost_x #readjust its x coordinate so its within screen boundaries
+                    screen.blit(tile[0], camera_adjusted_rect) # draw each tile
 
 class Player():
     def __init__(self, image_path, coordinate, playerNumber):
@@ -391,8 +395,7 @@ class Player():
                 self.rect.top = 0
                 self.vel_y = gravity
             elif self.rect.bottom >= game_height: #respawn when touch bottom of screen
-                self.rect.x = self.spawn_coords[0]
-                self.rect.y = self.spawn_coords[1]
+                self.reset()
         
         elif (self.number == 2): #update p2
             change_x = 0
@@ -416,8 +419,8 @@ class Player():
                 self.block_type = 4         
             
             self.rect.x += change_x
-            if self.rect.left <= 0:
-                self.rect.left = 0
+            if self.rect.left <= world.camera.leftmost_x:
+                self.rect.left = world.camera.leftmost_x
             elif self.rect.right >= screen_width + world.camera.leftmost_x:
                 self.rect.right = screen_width + world.camera.leftmost_x
 
