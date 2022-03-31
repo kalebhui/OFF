@@ -206,7 +206,7 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.camera = Camera(level, screen_width + 200)
+        self.camera = Camera(level, screen_width + 50)
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -383,8 +383,8 @@ class Player():
             self.rect.x += change_x
             if self.rect.left <= 0:
                 self.rect.left = 0
-            elif self.rect.right >= screen_width:
-                self.rect.right = screen_width
+            elif self.rect.right >= screen_width + world.camera.leftmost_x:
+                self.rect.right = screen_width + world.camera.leftmost_x
 
             self.rect.y += change_y
             if self.rect.top <= 0:
@@ -418,8 +418,8 @@ class Player():
             self.rect.x += change_x
             if self.rect.left <= 0:
                 self.rect.left = 0
-            elif self.rect.right >= screen_width:
-                self.rect.right = screen_width
+            elif self.rect.right >= screen_width + world.camera.leftmost_x:
+                self.rect.right = screen_width + world.camera.leftmost_x
 
             self.rect.y += change_y
             if self.rect.top <= 0:
