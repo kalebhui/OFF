@@ -66,8 +66,16 @@ def run_game():
             s1.send('s'.encode())
         elif key[pygame.K_d]:
             s1.send('d'.encode())
+        elif key[pygame.K_r]:
+            s1.send('r'.encode())
         elif key[pygame.K_1]:
             s1.send('1'.encode())
+        elif key[pygame.K_2]:
+            s1.send('2'.encode())
+        elif key[pygame.K_3]:
+            s1.send('3'.encode())
+        elif key[pygame.K_SPACE]:
+            s1.send('p'.encode())
 
         # output game state to display
         for i in range(0, len(message) - 1, 3):

@@ -57,18 +57,28 @@ void draw_tile_C(int ,int);
 void draw_tile_D(int ,int);
 void draw_tile_E(int ,int);
 
+// other display functions
+void clear_display();
+
 // keyboard functions
 char get_keyvalue(int kbd_ptr);
 void * listen_kbd(void * args);
 
 // client-side socket functions
-void *sender(void *arg);
-void *receiver(void *arg);
+void *game_handler(void *arg);
 int create_socket();
+
+// messages
+void disconnect_message();
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// Render Functions ////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////
+
+void clear_display() {
+    player_driver(320, 240, 320, 240);
+    rectangle_driver(0,0,320,240,0x0);
+}
 
 void renderTiles(int tile_arr[][3], int arr_len){
     int tile_type;
@@ -143,6 +153,27 @@ void draw_tile_D(int x, int y){
 void draw_tile_E(int x, int y){
     //define tile drawing procedure here
     rectangle_driver(x, y, TILESIZE, TILESIZE, 0x38);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// Message Code ////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+void disconnect_message() {
+
+    clear_display();
+
+    // prints disconnected in center of screen
+    int base = 64;
+    int char_width = 16;
+    int center_height = 108;
+    char colour = 0xFF;
+    int word_len = 12;
+    int disconnect[] = {13, 18, 28, 12, 24, 23, 23, 14, 12, 29, 14, 13};
+
+    for (int i = 0; i < word_len; i++) {
+        char_bp_driver(base + char_width * i, center_height, disconnect[i], colour);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -341,7 +372,7 @@ int unmap_physical(void * virtual_base, unsigned int span)
 ////////////////////////////Keyboard Drivers//////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-volatile char cur_key = '/';
+char cur_key = '/';
 
 void * listen_kbd(void * args){
     int* kbd_ptr;
@@ -521,27 +552,55 @@ int create_socket() {
     return sock;
 }
 
-void *receiver(void *arg) {
+void *game_handler(void *arg) {
+    int sock1 = create_socket(); // sender
+    int sock2 = create_socket(); // receiver
+    int kbd_ptr;
+    int ret;
+    char key_v;
     char * buffer = malloc(buffer_size);
-    int sock = create_socket();
     int valread;
-    if(sock == -1) {
+
+    if(sock1 == -1 || sock2 == -1) {
         return NULL;
     }
 
-    if( send(sock , "0", 1, 0) < 0) //used to distinguish what the connection is for on the server
+	if( send(sock1 , "1", 1, 0) < 0)
 	{
-        printf("Send failed");
+		printf("Send failed");
 		return NULL;
 	}
 
-    int block_count = 0
-    while(1) {
-        int coords_row = 0;
-        int coords_col = 0;
-        int coords[1000][3] = {0};
+    if( send(sock2 , "0", 1 , 0) < 0) {
+        printf("Send failed");
+        return NULL;
+    }
 
-        valread = read(sock, buffer, buffer_size);
+    int coords_row = 0;
+    int coords_col = 0;
+    int coords[1000][3] = {0};
+    int block_count = 0;
+    int signal = 1;
+
+    while (1) {
+        coords_row = 0;
+        coords_col = 0;
+        if (cur_key != '/') {
+            printf("%c\n", cur_key);
+            if( send(sock1 , &cur_key , 1 , 0) < 0) {
+                printf("Send failed");
+                return NULL;
+            }
+            signal = 1;
+        }
+        else {
+            if (signal) {
+                printf("No keyboard input\n");
+                signal = 0;
+            }
+        }
+        
+        valread = read(sock2, buffer, buffer_size);
         char * token = strtok(buffer, ",");
 
         while( token != NULL ) {
@@ -558,73 +617,38 @@ void *receiver(void *arg) {
             token = strtok(NULL, ",");
         }
 
-        if( send(sock , "0", 1 , 0) < 0) {
+        if( send(sock2 , "0", 1, 0) < 0) {
             printf("Send failed");
             return NULL;
         }
 
         if (block_count > coords_row) { //checks if screen reset (may need to change later !!!!)
-            rectangle_driver(0,0,320,240,0x0);
+            clear_display();
         }
         block_count = coords_row;
-
         renderTiles(coords, coords_row);
-    }
-}
 
-void *sender(void *arg) {
-    int sock = create_socket();
-    int kbd_ptr;
-    int ret;
-    char key_v;
-    char disc_msg[4] = "quit";
-    if(sock == -1) {
-        return NULL;
+        usleep(50000); // takes 20 key inputs per second
     }
 
-	if( send(sock , "1", 1, 0) < 0)
-	{
-		printf("Send failed");
-		return NULL;
-	}
-
-    while (1) {
-        int signal = 1;
-        while (1) {
-            if (cur_key != '/') {
-                printf("%c\n", cur_key);
-                if( send(sock , &cur_key , 1 , 0) < 0) {
-                    printf("Send failed");
-                    return NULL;
-                }
-                signal = 1;
-            }
-            else {
-                if (signal) {
-                    printf("No keyboard input\n");
-                    signal = 0;
-                }
-            }
-            usleep(50000); // takes 20 key inputs per second
-        }
-    }
+    return NULL;
 }
 
 int main(void)
 {
-    pthread_t thread_receiver;
-    pthread_t thread_sender;
+    clear_display();
+    pthread_t thread_game;
     pthread_t thread_kb;
-    pthread_create(&thread_receiver, NULL, receiver, NULL);
-    pthread_create(&thread_sender, NULL, sender, NULL);
-    pthread_create(&thread_kb, NULL, listen_kbd, NULL);
-    pthread_join(thread_receiver, NULL);
-    printf("thread 1 joined");
-    pthread_join(thread_sender, NULL);
-    printf("thread 2 joined");
-    pthread_join(thread_kb, NULL);
-    printf("thread 3 joined");
-    exit(0);
 
-   return 0;
+    pthread_create(&thread_game, NULL, game_handler, NULL);
+    pthread_create(&thread_kb, NULL, listen_kbd, NULL);
+
+    pthread_join(thread_game, NULL);
+    printf("thread 1 joined");
+    pthread_join(thread_kb, NULL);
+    printf("thread 2 joined");
+
+    disconnect_message();
+
+    return 0;
 }

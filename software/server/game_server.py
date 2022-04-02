@@ -8,6 +8,8 @@ import os
 
 os.environ["SDL_VIDEODRIVER"] = "dummy" #!!!! delete might be making the server slower
 
+testing = False
+
 SERVER = ''
 PORT = 3389
 FORMAT = "utf-8"
@@ -100,7 +102,7 @@ class World():
             row_count += 1
         self.tile_list = self.default_tile_list.copy()
 
-    def update(self, key):
+    def update(self, key_p1, key_p2):
 
         #check if p1 finished the level
         for tile in world.tile_list:
@@ -109,7 +111,7 @@ class World():
                     self.finish_time = pygame.time.get_ticks() - self.start_time
                     self.level_completed = True
 
-        if key == 'p': # place block
+        if key_p2 == 'p': # place block
             if not playerTwo.in_block(): #makes sure you can't place blocks over each other. maybe not necessary?
                 if(playerTwo.block_type == 1): #normal square
                     img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
@@ -122,7 +124,7 @@ class World():
                 img_rect.y = playerTwo.rect.y
                 self.tile_list.append((img, img_rect, playerTwo.block_type)) # add new block to tile list
                 self.blocks_placed += 1
-        if key == 'r': # reset to default
+        if key_p1 == 'r' or key_p2 == 'r': # reset to default
             self.tile_list = self.default_tile_list.copy()
 
 class Player():
@@ -278,7 +280,8 @@ def run_game():
         if world.level_completed:
             #draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
             # text_font, white, screen_width // 2 - 395, screen_height // 2)
-            print("done")
+            # print("done")
+            pass
         #update blits of all objects
         else:
             input_p1 = ''
@@ -289,7 +292,7 @@ def run_game():
             if player_two_inputs:
                 input_p2 = player_two_inputs[0]
                 player_two_inputs.popleft() #delete the latest action
-            world.update(input_p2)
+            world.update(input_p1, input_p2)
             playerOne.update(input_p1)
             playerTwo.update(input_p2)
 
@@ -360,14 +363,19 @@ def handle_client(conn, addr):
 def run_server():
     server.listen(5)
     print("[LISTENING]")
-    count = 0
-    while count < 5:
+
+    if testing:
+        max_threads = 5
+    else:
+        max_threads = 4
+    
+    while (threading.activeCount() - 1) < max_threads:
         # Establish connection with client.
         conn, addr = server.accept()
         thread = threading.Thread(target=handle_client, args=(conn,addr))
         thread.start()
         print("[ACTIVE CONNECTIONS] " + str(threading.activeCount() - 1)) # Doesn't include main thread
-        count = count + 1
+    print("[MAX THREADS CONNECTED]")
 
     run_game()
 
