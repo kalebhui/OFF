@@ -1,3 +1,4 @@
+from ast import In
 from math import ceil
 from turtle import color
 import time
@@ -28,11 +29,9 @@ ice_max_change_x = 3
 gravity = 0.5
 
 # Level settings
-reg_blk_count = 10
-ice_blk_count = 9
-tramp_blk_count = 8
-
-levels = bitmaps.levels #stores bitmaps for levels
+reg_blk_count = 100
+ice_blk_count = 100
+tramp_blk_count = 100
 
 avail_blocks = {} #store counts in hashmap
 if (reg_blk_count):
@@ -42,9 +41,36 @@ if (ice_blk_count):
 if (tramp_blk_count):
     avail_blocks[4] = tramp_blk_count
 
+#infinite level settings
+screen_shift_default = 1
+infinite_count_default = 0
+infinite_divisor_default = 10
+
 #default map setting
 screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
+
+bitmap = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+]
 
 text_font = pygame.font.SysFont('Bauhaus 93', 24)
 white = (255, 255, 255)
@@ -56,6 +82,7 @@ def draw_text(text, font, text_col, x, y):
 PLAYER_SELECT = 0
 LEVEL_SELECT = 1
 GAMEPLAY = 2
+INFINITE = 11
 
 class Menu():
     def __init__(self, player_select, level_select):
@@ -73,11 +100,10 @@ class Menu():
         self.player_two_connect = False
 
     def update(self):
-        global world #allows us to access the world variable in this function
         key = pygame.key.get_pressed()
         if self.current_menu_screen == PLAYER_SELECT:
             if self.player_one_connect and self.player_two_connect:
-                pygame.time.delay(500) #to allow both P1 and P2 to turn green before going to the next screen. ALSO can potentially crash pygame??
+                time.sleep(0.5) #to allow both P1 and P2 to turn green before going to the next screen
                 self.current_menu_screen = LEVEL_SELECT
             elif key[pygame.K_1]:
                 self.convert_red_to_green_tiles(0, screen_height, screen_width // 2) #turns the red tiles to green so there is an indication that p1 has connected
@@ -89,20 +115,11 @@ class Menu():
                 screen.blit(tile[0], tile[1])
         elif self.current_menu_screen == LEVEL_SELECT:
             if key[pygame.K_1]:
-                world = World(levels[0], 1) #intializes world with proper level
                 self.current_menu_screen = GAMEPLAY
-            elif key[pygame.K_2]:
-                world = World(levels[1], 2)
+                world = World(bitmap, 1) #start at level 1
+            elif key[pygame.K_i]:
                 self.current_menu_screen = GAMEPLAY
-            elif key[pygame.K_3]:
-                world = World(levels[2], 3)
-                self.current_menu_screen = GAMEPLAY
-            elif key[pygame.K_4]:
-                world = World(levels[3], 4)
-                self.current_menu_screen = GAMEPLAY
-            elif key[pygame.K_5]:
-                world = World(levels[4], 5)
-                self.current_menu_screen = GAMEPLAY
+                world = World(bitmaps.infinite_bitmap, INFINITE) #start at level 1
             for tile in self.level_select_tile_list:
                 screen.blit(tile[0], tile[1])
 
@@ -171,31 +188,9 @@ def create_status_bar(self, data, size_x, size_y):
     img_rect = img.get_rect()
     img_rect.x = 0
     img_rect.y = game_height
-    tile_list.append((img, img_rect, 0))
+    tile_list.append((img, img_rect, -1))
 
     return tile_list
-
-class Camera():
-    def __init__(self, level, level_width = None):
-        self.leftmost_x = 0
-        if level_width == None:
-            level_bitmap = levels[level]
-            self.max_x = len(level_bitmap[0]) * tile_size
-        else:
-            self.max_x = level_width
-    
-    #takes in a tile which has a x and y coord and returns whether they are on screen
-    def onScreen(self, tile):
-        if tile.left >= self.leftmost_x and tile.right <= self.leftmost_x + screen_width:
-            return True
-        return False
-
-    def update(self, playerOne):
-        self.leftmost_x = playerOne.rect.x - screen_width // 2 #camera is relative to player one position
-        if self.leftmost_x < 0:
-            self.leftmost_x = 0
-        elif self.leftmost_x > self.max_x - screen_width:
-            self.leftmost_x = self.max_x - screen_width
 
 class World():
     def __init__(self, data, level):
@@ -206,7 +201,7 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.camera = Camera(level, screen_width + 200)
+        self.camera = InfiniteCamera()
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -222,7 +217,7 @@ class World():
 
     def update(self):
         draw_text(str((pygame.time.get_ticks() - self.start_time) / 1000), text_font, white, tile_size - 10, 10) #timer for level
-        self.camera.update(playerOne)
+        self.camera.update()
         # draw block counts
         offset = 0
         for key in self.avail_blocks:
@@ -272,17 +267,64 @@ class World():
         if key[pygame.K_r]: # reset to default
             self.tile_list = self.default_tile_list.copy()
             self.avail_blocks = self.default_avail_blocks.copy()
-            print(self.avail_blocks)
 
+        # #infinite level logic
+        # if self.infinite_count % self.infinite_divisor == 0:
+        #     for tile in self.tile_list:
+        #         if (tile[2] != -1): #check if bar
+        #             tile[1].y += self.screen_shift
+        #             # print(tile)
+        # self.infinite_count += 1
+        # if self.infinite_count % 100 == 0:
+        #     if self.infinite_divisor > 2:
+        #         self.infinite_divisor -= 1
+        #     elif self.screen_shift < 5:
+        #         self.screen_shift += 1
+        
+        index = 0
         for tile in self.tile_list:
             if tile[2] == -1: #to keep the status bar in view
                 screen.blit(tile[0], tile[1])
-            elif tile[1].y > (game_height - bar_height): #if the block is part of the status bar
+            elif tile[1].y > game_height: #if the block is part of the status bar
                 screen.blit(tile[0], tile[1])
             elif self.camera.onScreen(tile[1]): #if the tile is within camera view
                     camera_adjusted_rect = tile[1].copy()
-                    camera_adjusted_rect.x -= self.camera.leftmost_x #readjust its x coordinate so its within screen boundaries
+                    camera_adjusted_rect.y = tile[1].y - self.camera.bottom_y #readjust its x coordinate so its within screen boundaries
                     screen.blit(tile[0], camera_adjusted_rect) # draw each tile
+            else:
+                self.tile_list.pop(index)
+            # print(self.tile_list)
+            index += 1
+        
+
+class InfiniteCamera():
+    def __init__(self):
+        self.bottom_y = 0
+        self.infinite_count = infinite_count_default
+        self.infinite_divisor = infinite_divisor_default
+        self.screen_shift = screen_shift_default
+    
+    #takes in a tile which has a x and y coord and returns whether they are on screen
+    def onScreen(self, tile):
+        if tile.bottom >= self.bottom_y: # !!!!
+            return True
+        return False
+
+    def update(self):
+        # if self.infinite_count % self.infinite_divisor == 0:
+        self.bottom_y -= 0.5
+        # self.infinite_count += 1
+        # if self.infinite_count % 100 == 0:
+        #     if self.infinite_divisor > 2:
+        #         self.infinite_divisor -= 1
+        #     elif self.screen_shift < 5:
+        #         self.screen_shift += 1
+            
+        # self.leftmost_x = playerOne.rect.x - screen_width // 2 #camera is relative to player one position
+        # if self.leftmost_x < 0:
+        #     self.leftmost_x = 0
+        # elif self.leftmost_x > self.max_x - screen_width:
+        #     self.leftmost_x = self.max_x - screen_width
 
 class Player():
     def __init__(self, image_path, coordinate, playerNumber):
@@ -295,6 +337,7 @@ class Player():
         self.height = self.playerImg.get_height()
         self.vel_y = 0
         self.vel_x = 0
+        self.jumped = False
         self.spawn_coords = coordinate # remember starting coordinates for respawn
         self.block_type = 1 #default block type
 
@@ -304,13 +347,6 @@ class Player():
             if tile[1].colliderect(self.rect):
                 return True
         return False
-    
-    def reset(self):
-        self.rect.x = self.spawn_coords[0]
-        self.rect.y = self.spawn_coords[1]
-        self.vel_y = 0
-        self.vel_x = 0
-        self.block_type = 1
 
     def update(self):
         if (self.number == 1): #update p1
@@ -387,15 +423,16 @@ class Player():
             self.rect.x += change_x
             if self.rect.left <= 0:
                 self.rect.left = 0
-            elif self.rect.right >= screen_width + world.camera.leftmost_x:
-                self.rect.right = screen_width + world.camera.leftmost_x
+            elif self.rect.right >= screen_width:
+                self.rect.right = screen_width
 
             self.rect.y += change_y
-            if self.rect.top <= 0:
-                self.rect.top = 0
+            if self.rect.top <= world.camera.bottom_y:
+                self.rect.top = world.camera.bottom_y
                 self.vel_y = gravity
-            elif self.rect.bottom >= game_height: #respawn when touch bottom of screen
-                self.reset()
+            elif self.rect.bottom >= game_height + world.camera.bottom_y: #respawn when touch bottom of screen
+                self.rect.x = self.spawn_coords[0]
+                self.rect.y = self.spawn_coords[1] + world.camera.bottom_y
         
         elif (self.number == 2): #update p2
             change_x = 0
@@ -419,25 +456,29 @@ class Player():
                 self.block_type = 4         
             
             self.rect.x += change_x
-            if self.rect.left <= world.camera.leftmost_x:
-                self.rect.left = world.camera.leftmost_x
-            elif self.rect.right >= screen_width + world.camera.leftmost_x:
-                self.rect.right = screen_width + world.camera.leftmost_x
+            if self.rect.left <= 0:
+                self.rect.left = 0
+            elif self.rect.right >= screen_width:
+                self.rect.right = screen_width
 
             self.rect.y += change_y
-            if self.rect.top <= 0:
-                self.rect.top = 0
-            elif self.rect.bottom >= game_height:
-                self.rect.bottom = game_height
+            if self.rect.top <= 0 + world.camera.bottom_y:
+                self.rect.top = 0 + world.camera.bottom_y
+            elif self.rect.bottom >= game_height + world.camera.bottom_y:
+                self.rect.bottom = game_height + world.camera.bottom_y
 
-        camera_adjusted_rect = self.rect.copy()
-        camera_adjusted_rect.x -= world.camera.leftmost_x
-        # draw player at current location
-        screen.blit(self.playerImg, camera_adjusted_rect)
+        if False:
+            screen.blit(self.playerImg, self.rect)
+        else:
+            camera_adjusted_rect = self.rect.copy()
+            camera_adjusted_rect.y = -(world.camera.bottom_y - self.rect.y)
+            # draw player at current location
+            screen.blit(self.playerImg, camera_adjusted_rect)
+            # draw player at current location
+            #screen.blit(self.playerImg, self.rect)
 
 menu = Menu(bitmaps.player_select, bitmaps.level_select)
-#world = World(bitmap, 1) #start at level 1
-world = None #will get intialized in the level select screen after player choooses level
+world = World(bitmap, 1)
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
 playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
 
@@ -454,18 +495,10 @@ while open:
         menu.update()
 
     elif world.level_completed:
-        if world.level < 5:
-            #rewrite to fit screen
-            draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
-            text_font, white, screen_width // 2 - 300, screen_height // 2)
-            pygame.display.update() #display the message
-            pygame.time.delay(3000) # wait for 3 seconds
-            world = World(levels[world.level + 1], world.level + 1) #recreate world with next level bitmap
-            playerOne.reset() #respawn player one
-            playerTwo.reset() #respawn player two
-        else:
-            draw_text(f"Congratulations! You have completed the game!", 
-            text_font, white, screen_width // 2 - 300, screen_height // 2)
+        #rewrite to fit screen
+        draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
+        text_font, white, screen_width // 2 - 300, screen_height // 2)
+        
     #update blits of all objects
     else:
         world.update()

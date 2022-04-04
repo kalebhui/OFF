@@ -29,33 +29,38 @@
 #define buffer_size 7000
 #define bitmap_width 40
 #define bitmap_height 24
-#define TILE_SIZE 10
 
 //player and tile type define
 #define PLAYER1 -1
 #define PLAYER2 -2
+#define STATUSBAR 0
 #define TILE_A  1
 #define TILE_B  2
 #define TILE_C  3
 #define TILE_D  4
 #define TILE_E  5
+
+#define STATUSBARHEIGHT 3
 #define TILESIZE 10
+#define SCREENWIDTH 320
+#define SCREENHEIGHT 240
 
 int open_physical (int);
 void * map_physical (int, unsigned int, unsigned int);
 void close_physical (int);
 int unmap_physical (void *, unsigned int);
 int player_driver(int, int, int, int);  //x1, y1, x2, y2
-int rectangle_driver(int, int , int, int, char); //x1, y1, width, height, color
+int rectangle_driver(int, int, int, int, char); //x1, y1, width, height, color
 int char_bp_driver(int, int, int, char);  //x1, y1, character_sel, color
 int half_player_driver(int, int, int);  //x, y, player_num
 
 // tile drawing functions
-void draw_tile_A(int ,int);
-void draw_tile_B(int ,int);
-void draw_tile_C(int ,int);
-void draw_tile_D(int ,int);
-void draw_tile_E(int ,int);
+void draw_status_bar(int, int);
+void draw_tile_A(int, int);
+void draw_tile_B(int, int);
+void draw_tile_C(int, int);
+void draw_tile_D(int, int);
+void draw_tile_E(int, int);
 
 // other display functions
 void clear_display();
@@ -100,6 +105,10 @@ void renderTiles(int tile_arr[][3], int arr_len){
             half_player_driver(tile_x, tile_y, 2);
             break;
 
+        case STATUSBAR:
+            draw_status_bar(tile_x, tile_y);
+            break;
+
         case TILE_A:
             draw_tile_A(tile_x, tile_y);
             break;
@@ -129,6 +138,11 @@ void renderTiles(int tile_arr[][3], int arr_len){
 }
 
 //tile drawing procedure functions
+
+void draw_status_bar(int x, int y){
+    //define tile drawing procedure here
+    rectangle_driver(x, y, SCREENWIDTH, STATUSBARHEIGHT, 0xFF);
+}
 
 void draw_tile_A(int x, int y){
     //define tile drawing procedure here
@@ -559,6 +573,7 @@ void *game_handler(void *arg) {
     int ret;
     char key_v;
     char * buffer = malloc(buffer_size);
+    // char * prev_buffer = malloc(buffer_size);//!!!!
     int valread;
 
     if(sock1 == -1 || sock2 == -1) {
@@ -579,7 +594,7 @@ void *game_handler(void *arg) {
     int coords_row = 0;
     int coords_col = 0;
     int coords[1000][3] = {0};
-    int block_count = 0;
+    // int block_count = 0;
     int signal = 1;
 
     while (1) {
@@ -601,18 +616,24 @@ void *game_handler(void *arg) {
         }
         
         valread = read(sock2, buffer, buffer_size);
+        // int changed = strcmp(prev_buffer, buffer); 
         char * token = strtok(buffer, ",");
-
+        
         while( token != NULL ) {
-            if(*token == '&') { // '&' signals end of coordinates
+            if (*token == '.') {
+                clear_display();
+            }
+            else if(*token == '&') { // '&' signals end of coordinates
                 break;
             }
-            int num = atoi(token);
-            coords[coords_row][coords_col] = num;
-            coords_col++;
-            if(coords_col == 3) {
-                coords_col = 0;
-                coords_row++;
+            else {
+                int num = atoi(token);
+                coords[coords_row][coords_col] = num;
+                coords_col++;
+                if(coords_col == 3) {
+                    coords_col = 0;
+                    coords_row++;
+                }
             }
             token = strtok(NULL, ",");
         }
@@ -621,13 +642,14 @@ void *game_handler(void *arg) {
             printf("Send failed");
             return NULL;
         }
-
-        if (block_count > coords_row) { //checks if screen reset (may need to change later !!!!)
-            clear_display();
-        }
-        block_count = coords_row;
+        
+        // if (block_count != coords_row) { //checks if screen reset (may need to change later !!!!)
+        //     clear_display();
+        // }
+        // block_count = coords_row;
         renderTiles(coords, coords_row);
-
+        
+        // strcpy(prev_buffer, buffer);
         usleep(50000); // takes 20 key inputs per second
     }
 

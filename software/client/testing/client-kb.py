@@ -19,6 +19,7 @@ clock = pygame.time.Clock()
 screen_width = 320
 screen_height = 240
 tile_size = 10
+status_height = 3
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
 
@@ -29,6 +30,7 @@ trampoline_square = pygame.image.load('images/trampoline.png')
 finish_square = pygame.image.load('images/finish.png')
 player_one = pygame.image.load('images/player-one.png')
 player_two = pygame.image.load('images/player-two.png')
+status_border = pygame.image.load('images/status-border.png')
 
 yellow_square = pygame.transform.scale(yellow_square, (tile_size, tile_size))
 red_square = pygame.transform.scale(red_square, (tile_size, tile_size))
@@ -37,6 +39,7 @@ trampoline_square = pygame.transform.scale(trampoline_square, (tile_size, tile_s
 finish_square = pygame.transform.scale(finish_square, (tile_size, tile_size))
 player_one = pygame.transform.scale(player_one, (tile_size, tile_size))
 player_two = pygame.transform.scale(player_two, (tile_size, tile_size))
+status_border = pygame.transform.scale(status_border, (screen_width, status_height))
 
 def run_game():
     open = True
@@ -45,15 +48,18 @@ def run_game():
     # signal that this client should receive data from server
     s1.send('1'.encode())
     while open:
+        changed = False
         clock.tick(20) # number of frames per sec
         screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 open = False
 
-        message = s.recv(1024).decode()
+        message = s.recv(10000).decode()
         s.send('0'.encode()) #signal message received
-
+        if message[0] == '.':
+            changed = True
+            message = message
         message = message.split(',')
 
         # take input from keyboard and send to server
@@ -84,6 +90,8 @@ def run_game():
                 img = player_one
             elif tile == -2:
                 img = player_two
+            elif tile == 0:
+                img = status_border
             elif tile == 1:
                 img = yellow_square
             elif tile == 2:
@@ -96,10 +104,13 @@ def run_game():
                 img = finish_square
             else:
                 print("ERRRRRRRRRRRRRRROR")
-            img_rect = img.get_rect()
-            img_rect.x = int(message[i]) 
-            img_rect.y = int(message[i + 1])
-            screen.blit(img, img_rect)
+            try:
+                img_rect = img.get_rect()
+                img_rect.x = int(message[i]) 
+                img_rect.y = int(message[i + 1])
+                screen.blit(img, img_rect)
+            except:
+                print(tile)
 
         pygame.display.update()
 
