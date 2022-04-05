@@ -14,7 +14,7 @@ PORT = 3389
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "quit"
 clients_arr = []
-max_threads = 2 # Final product clients will require 2 threads each
+max_threads = 4 # Final product clients will require 2 threads each
 changed = False
 player_change = False
 player_one_inputs = deque() #stores user inputs
@@ -47,7 +47,7 @@ ice_max_change_x = 3
 gravity = 0.5
 
 # Level settings
-reg_blk_count = 10
+reg_blk_count = 10000
 ice_blk_count = 9
 tramp_blk_count = 8
 
@@ -68,6 +68,7 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 PLAYER_SELECT = 0
 LEVEL_SELECT = 1
 GAMEPLAY = 2
+MENUOFFSET = 100
 
 
 class Menu():
@@ -87,6 +88,7 @@ class Menu():
 
     def update(self, key_p1, key_p2):
         global world #allows us to access the world variable in this function
+        global changed
         if self.current_menu_screen == PLAYER_SELECT:
             if self.player_one_connect and self.player_two_connect:
                 pygame.time.delay(500) #to allow both P1 and P2 to turn green before going to the next screen. ALSO can potentially crash pygame??
@@ -104,18 +106,23 @@ class Menu():
             if key_p1 == '1' or key_p2 == '1':
                 world = World(levels[0], 1) #intializes world with proper level
                 self.current_menu_screen = GAMEPLAY
+                changed = True
             elif key_p1 == '2' or key_p2 == '2':
                 world = World(levels[1], 2)
                 self.current_menu_screen = GAMEPLAY
+                changed = True
             elif key_p1 == '3' or key_p2 == '3':
                 world = World(levels[2], 3)
                 self.current_menu_screen = GAMEPLAY
+                changed = True
             elif key_p1 == '4' or key_p2 == '4':
                 world = World(levels[3], 4)
                 self.current_menu_screen = GAMEPLAY
+                changed = True
             elif key_p1 == '5' or key_p2 == '5':
                 world = World(levels[4], 5)
                 self.current_menu_screen = GAMEPLAY
+                changed = True
 
     def convert_red_to_green_tiles(self, x, y, size):
         if self.current_menu_screen == PLAYER_SELECT:
@@ -136,6 +143,7 @@ class Menu():
 class Camera():
     def __init__(self, level, level_width = None):
         self.leftmost_x = 0
+        self.min_x = 0
         if level_width == None:
             level_bitmap = levels[level]
             self.max_x = len(level_bitmap[0]) * tile_size
@@ -149,12 +157,13 @@ class Camera():
         return False
 
     def update(self, playerOne):
+        global changed
         old_camera = self.leftmost_x
-        self.leftmost_x = playerOne.rect.x - screen_width // 2 #camera is relative to player one position
+        self.leftmost_x = max(self.min_x, playerOne.rect.x - screen_width // 2) #camera is relative to player one position
         if old_camera != self.leftmost_x:
-            changed = True #if the camera is moving we are changing the tile list potentially???
-        if self.leftmost_x < 0:
-            self.leftmost_x = 0
+            changed = True
+        if self.leftmost_x < self.min_x:
+            self.leftmost_x = self.min_x
         elif self.leftmost_x > self.max_x - screen_width:
             self.leftmost_x = self.max_x - screen_width
 
@@ -183,15 +192,11 @@ class World():
         self.tile_list = self.default_tile_list.copy()
 
     def update(self, key_p1, key_p2):
+        global changed
         # draw_text(str((pygame.time.get_ticks() - self.start_time) / 1000), text_font, white, tile_size - 10, 10) #!!!!
         self.camera.update(playerOne)
         # draw block counts
         offset = 0
-        for key in self.avail_blocks: #move this to sender function I think!!!!
-            xcoord = status_tile_size * (offset * 3 + 2)
-            ycoord = game_height + (screen_height - game_height) // 2 + bar_height
-            # draw_text(str(self.avail_blocks[key]), text_font, white, xcoord, ycoord) #!!!!
-            offset += 1
         
         #check if p1 finished the level
         for tile in world.tile_list:
@@ -409,6 +414,7 @@ def create_tile_list(self, data, size_x, size_y):
         return tile_list
 
 def create_status_bar(self, data, size_x, size_y):
+    block_offset = screen_width // len(avail_blocks)
     offset = 0
     tile_list = []
     for key in data:
@@ -424,7 +430,8 @@ def create_status_bar(self, data, size_x, size_y):
             img = pygame.transform.scale(self.finish_square, (size_x, size_y))
         img_rect = img.get_rect()
         # space out blocks horizontally
-        img_rect.x = size_x * (offset * 3 + 2)
+        # img_rect.x = size_x * (offset * 4 + 2)
+        img_rect.centerx = block_offset * offset + block_offset // 2
         # center the blocks vertically
         img_rect.centery = game_height + (screen_height - game_height) // 2 + bar_height 
         block = (img, img_rect, key)
@@ -449,7 +456,7 @@ playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
 # game loop, will continue until quit
 def run_game():
     global world
-    global player_change
+    global changed
     open = True
     while open:
         clock.tick(20) # number of frames per sec
@@ -461,11 +468,11 @@ def run_game():
         input_p2 = ''
         if player_one_inputs:
             input_p1 = player_one_inputs[0]
-            player_change = True
+            # player_change = True#!!!!
             player_one_inputs.popleft() #delete the latest action
         if player_two_inputs:
             input_p2 = player_two_inputs[0]
-            player_change = True
+            # player_change = True#!!!!
             player_two_inputs.popleft() #delete the latest action
 
         if menu.current_menu_screen != GAMEPLAY:
@@ -477,6 +484,7 @@ def run_game():
                 # print("done")
                 pygame.time.delay(3000) # wait for 3 seconds
                 world = World(levels[world.level + 1], world.level + 1) #recreate world with next level bitmap
+                changed = True
                 playerOne.reset() #respawn player one
                 playerTwo.reset() #respawn player two
             else:
@@ -523,71 +531,43 @@ def receiver (conn, addr):
             player_two_inputs.append(message)
     conn.close()
 
-# def sender (conn, addr):
-#     global world
-#     global playerOne
-#     global playerTwo
-    
-#     connected = True
-#     while connected:
-#         # block thread until we get information from Client
-#         try:
-#             if menu.current_menu_screen != GAMEPLAY:
-#                 str_tilelist = ''
-#                 if menu.current_menu_screen == PLAYER_SELECT:
-#                     tile_list = menu.player_select_tile_list
-#                 elif menu.current_menu_screen == LEVEL_SELECT:
-#                     tile_list = menu.level_select_tile_list
-#                 for tile in tile_list:
-#                     str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2]},"
-#                 str_tilelist += "&"
-#                 conn.send(str_tilelist.encode())
-#                 conn.recv(1).decode(FORMAT)
-#             else:
-#                 str_tilelist = ''
-#                 str_tilelist += f"{playerOne.adjusted_rect.x},{playerOne.adjusted_rect.y},-1,"
-#                 str_tilelist += f"{playerTwo.adjusted_rect.x},{playerTwo.adjusted_rect.y},-2,"
-#                 for tile in world.tile_list:
-#                     if tile[1].y > (game_height - bar_height): #if the block is part of the status bar
-#                         str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2]},"
-#                     elif world.camera.onScreen(tile[1]): #if the tile is within camera view
-#                         camera_adjusted_rect = tile[1].copy()
-#                         camera_adjusted_rect.x -= world.camera.leftmost_x #readjust its x coordinate so its within screen boundaries
-#                         str_tilelist += f"{camera_adjusted_rect.x},{camera_adjusted_rect.y},{tile[2]},"
-#                 str_tilelist += "&"
-#                 conn.send(str_tilelist.encode())
-#                 conn.recv(1).decode(FORMAT)
-#         except socket.error:
-#             connected = False
-#             print("[" + str(addr) + "] " + DISCONNECT_MESSAGE) #!!!!
-#     conn.close()
-
 def sender ():
     global world
     global playerOne
     global playerTwo
     global clients_arr
-    
+    global player_change
+    global changed
+    print("LENGTH OF CLIENT ARR: ")
+    print(len(clients_arr))
     connected = True
+
     while connected:
         # block thread until we get information from Client
         try:
             str_tilelist = ''
-            if player_change:
-                str_tilelist += '.,'
-                player_change = False
+            if changed: #signal to clear the display
+                str_tilelist += '.,' 
+                changed = False
             if menu.current_menu_screen != GAMEPLAY:
                 if menu.current_menu_screen == PLAYER_SELECT:
                     tile_list = menu.player_select_tile_list
                 elif menu.current_menu_screen == LEVEL_SELECT:
                     tile_list = menu.level_select_tile_list
                 for tile in tile_list:
-                    str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2]},"
+                    str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2] + MENUOFFSET},"
                 str_tilelist += "&"
                 for client in clients_arr:
                     client[0].send(str_tilelist.encode())
                     client[0].recv(1).decode(FORMAT)
             else:
+                str_tilelist += '!,' 
+                for key in world.avail_blocks:
+                    # xcoord = status_tile_size * (offset * 3 + 2)
+                    # ycoord = game_height + (screen_height - game_height) // 2 + bar_height
+                    str_tilelist += f"{world.avail_blocks[key]},"
+                    # offset += 1
+                str_tilelist += '!,' 
                 str_tilelist += f"{playerOne.adjusted_rect.x},{playerOne.adjusted_rect.y},-1,"
                 str_tilelist += f"{playerTwo.adjusted_rect.x},{playerTwo.adjusted_rect.y},-2,"
                 for tile in world.tile_list:
@@ -618,6 +598,9 @@ def handle_client(conn, addr):
         thread.start()
     elif message == 0:
         clients_arr.append((conn, addr))
+        print("IN HANDLE_CLIENT: ")
+        print(conn)
+        print(addr)
         # sender(conn, addr)
     else:
         print("ERROR")
@@ -626,15 +609,18 @@ def run_server():
     server.listen(5)
     print("[LISTENING]")
     
-    while (threading.activeCount() - 1) < max_threads:
+    count = 0
+    while count < max_threads:
         # Establish connection with client.
         conn, addr = server.accept()
         handle_client(conn, addr)
         # thread = threading.Thread(target=handle_client, args=(conn,addr))
         # thread.start()
         print("[ACTIVE CONNECTIONS] " + str(threading.activeCount() - 1)) # Doesn't include main thread
+        count += 1
 
     print("[MAX THREADS CONNECTED]")
+    print(clients_arr)
     thread = threading.Thread(target=sender, args=())
     thread.start()
     run_game()

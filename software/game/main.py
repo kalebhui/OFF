@@ -144,6 +144,7 @@ def create_tile_list(self, data, size_x, size_y):
         return tile_list
 
 def create_status_bar(self, data, size_x, size_y):
+    block_offset = screen_width // len(avail_blocks)
     offset = 0
     tile_list = []
     for key in data:
@@ -159,7 +160,8 @@ def create_status_bar(self, data, size_x, size_y):
             img = pygame.transform.scale(self.finish_square, (size_x, size_y))
         img_rect = img.get_rect()
         # space out blocks horizontally
-        img_rect.x = size_x * (offset * 3 + 2)
+        # img_rect.x = size_x * (offset * 4 + 2)
+        img_rect.centerx = block_offset * offset + block_offset // 2
         # center the blocks vertically
         img_rect.centery = game_height + (screen_height - game_height) // 2 + bar_height 
         block = (img, img_rect, key)
@@ -225,9 +227,10 @@ class World():
         self.camera.update(playerOne)
         # draw block counts
         offset = 0
+        block_offset = screen_width // len(avail_blocks)
         for key in self.avail_blocks:
-            xcoord = status_tile_size * (offset * 3 + 2)
-            ycoord = game_height + (screen_height - game_height) // 2 + bar_height
+            xcoord = block_offset * offset + block_offset // 2 + tile_size
+            ycoord = game_height + 3 + bar_height
             draw_text(str(self.avail_blocks[key]), text_font, white, xcoord, ycoord)
             offset += 1
         

@@ -42,8 +42,14 @@
 
 #define STATUSBARHEIGHT 3
 #define TILESIZE 10
+#define MENUOFFSET 100
+#define MENUSIZE 5
 #define SCREENWIDTH 320
 #define SCREENHEIGHT 240
+#define MAXBLOCKS 3
+#define GAMEHEIGHT 207
+#define CHARTOINT 87
+#define MAXDIGITS 10
 
 int open_physical (int);
 void * map_physical (int, unsigned int, unsigned int);
@@ -56,11 +62,11 @@ int half_player_driver(int, int, int);  //x, y, player_num
 
 // tile drawing functions
 void draw_status_bar(int, int);
-void draw_tile_A(int, int);
-void draw_tile_B(int, int);
-void draw_tile_C(int, int);
-void draw_tile_D(int, int);
-void draw_tile_E(int, int);
+void draw_tile_A(int, int, int);
+void draw_tile_B(int, int, int);
+void draw_tile_C(int, int, int);
+void draw_tile_D(int, int, int);
+void draw_tile_E(int, int, int);
 
 // other display functions
 void clear_display();
@@ -74,7 +80,9 @@ void *game_handler(void *arg);
 int create_socket();
 
 // messages
-void disconnect_message();
+int convert_char(char);
+void draw_string(int, int, char *, char);
+// void disconnect_message();!!!!
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// Render Functions ////////////////////////////////
@@ -110,23 +118,43 @@ void renderTiles(int tile_arr[][3], int arr_len){
             break;
 
         case TILE_A:
-            draw_tile_A(tile_x, tile_y);
+            draw_tile_A(tile_x, tile_y, TILESIZE);
             break;
 
         case TILE_B:
-            draw_tile_B(tile_x, tile_y);
+            draw_tile_B(tile_x, tile_y, TILESIZE);
             break;
 
         case TILE_C:
-            draw_tile_C(tile_x, tile_y);
+            draw_tile_C(tile_x, tile_y, TILESIZE);
             break;
 
         case TILE_D:
-            draw_tile_D(tile_x, tile_y);
+            draw_tile_D(tile_x, tile_y, TILESIZE);
             break;
 
         case TILE_E:
-            draw_tile_E(tile_x, tile_y);
+            draw_tile_E(tile_x, tile_y, TILESIZE);
+            break;
+
+        case TILE_A + MENUOFFSET:
+            draw_tile_A(tile_x, tile_y, MENUSIZE);
+            break;
+
+        case TILE_B + MENUOFFSET:
+            draw_tile_B(tile_x, tile_y, MENUSIZE);
+            break;
+
+        case TILE_C + MENUOFFSET:
+            draw_tile_C(tile_x, tile_y, MENUSIZE);
+            break;
+
+        case TILE_D + MENUOFFSET:
+            draw_tile_D(tile_x, tile_y, MENUSIZE);
+            break;
+            
+        case TILE_E + MENUOFFSET:
+            draw_tile_E(tile_x, tile_y, MENUSIZE);
             break;
 
         default:
@@ -144,49 +172,72 @@ void draw_status_bar(int x, int y){
     rectangle_driver(x, y, SCREENWIDTH, STATUSBARHEIGHT, 0xFF);
 }
 
-void draw_tile_A(int x, int y){
+void draw_tile_A(int x, int y, int tileSize){
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0xAA);
+    rectangle_driver(x, y, tileSize, tileSize, 0xAA);
 }
 
-void draw_tile_B(int x, int y){
+void draw_tile_B(int x, int y, int tileSize){
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0xE0);
+    rectangle_driver(x, y, tileSize, tileSize, 0xE0);
 }
 
-void draw_tile_C(int x, int y){
+void draw_tile_C(int x, int y, int tileSize){
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0x03);
+    rectangle_driver(x, y, tileSize, tileSize, 0x03);
 }
 
-void draw_tile_D(int x, int y){
+void draw_tile_D(int x, int y, int tileSize){
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0xDD);
+    rectangle_driver(x, y, tileSize, tileSize, 0xDD);
 }
 
-void draw_tile_E(int x, int y){
+void draw_tile_E(int x, int y, int tileSize){
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0x38);
+    rectangle_driver(x, y, tileSize, tileSize, 0x38);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// Message Code ////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-void disconnect_message() {
+int convert_char(char c) {
+    int x = c - CHARTOINT;
+    return c - CHARTOINT;
+}
 
-    clear_display();
+void draw_string(int x1, int y1, char * string, char colour) {
+    int char_width = 16; //changeable for bigger spacing
+    for(int i = 0; i < strlen(string); i++) {
+        if (string[i] != ' ') {
+            char_bp_driver(x1 + char_width * i, y1, convert_char(string[i]), colour);
+        }
+    }
+}
 
-    // prints disconnected in center of screen
-    int base = 64;
+void draw_status_text(int num[], int length, char colour) {
+    int x1 = 0;
+    int block_offset = SCREENWIDTH / length;
     int char_width = 16;
-    int center_height = 108;
-    char colour = 0xFF;
-    int word_len = 12;
-    int disconnect[] = {13, 18, 28, 12, 24, 23, 23, 14, 12, 29, 14, 13};
-
-    for (int i = 0; i < word_len; i++) {
-        char_bp_driver(base + char_width * i, center_height, disconnect[i], colour);
+    int reverse[MAXDIGITS];
+    for(int i = 0; i < length; i++) {
+        int num_digits = 0;
+        while (num[i] > 0) { // used too divide up numbers larger than 10 into individual digits
+            reverse[num_digits] = num[i] % 10;
+            num_digits++;
+            num[i] /= 10;
+        }
+        if (num_digits == 0) { // if there are no more blocks display zero
+            char_bp_driver(block_offset * i + block_offset / 2 + TILESIZE, GAMEHEIGHT + 3 + STATUSBARHEIGHT, 0, colour);
+        }
+        else {
+            int count = 0;
+            for (int j = num_digits - 1; j >= 0; j--) {
+                char_bp_driver(block_offset * i + block_offset / 2 + char_width * count + TILESIZE, 
+                                GAMEHEIGHT + 3 + STATUSBARHEIGHT, reverse[j], colour);
+                count++;
+            }
+        }
     }
 }
 
@@ -573,29 +624,32 @@ void *game_handler(void *arg) {
     int ret;
     char key_v;
     char * buffer = malloc(buffer_size);
-    // char * prev_buffer = malloc(buffer_size);//!!!!
     int valread;
 
     if(sock1 == -1 || sock2 == -1) {
+        printf("connection failed \n");
         return NULL;
     }
 
 	if( send(sock1 , "1", 1, 0) < 0)
 	{
-		printf("Send failed");
+		printf("Send failed\n");
 		return NULL;
 	}
 
     if( send(sock2 , "0", 1 , 0) < 0) {
-        printf("Send failed");
+        printf("Send failed\n");
         return NULL;
     }
 
     int coords_row = 0;
     int coords_col = 0;
     int coords[1000][3] = {0};
-    // int block_count = 0;
+    int statusCount[MAXBLOCKS] = {0};
     int signal = 1;
+    int clear_signal = 0;
+    int blockIndex = 0; //signal for data containing block amounts for p2
+    int blockSignal = 0;
 
     while (1) {
         coords_row = 0;
@@ -603,7 +657,7 @@ void *game_handler(void *arg) {
         if (cur_key != '/') {
             printf("%c\n", cur_key);
             if( send(sock1 , &cur_key , 1 , 0) < 0) {
-                printf("Send failed");
+                printf("Send failed\n");
                 return NULL;
             }
             signal = 1;
@@ -621,10 +675,23 @@ void *game_handler(void *arg) {
         
         while( token != NULL ) {
             if (*token == '.') {
-                clear_display();
+                clear_signal = 1;
             }
             else if(*token == '&') { // '&' signals end of coordinates
                 break;
+            }
+            else if(*token == '!' && blockSignal) { //If we recieve the second ! we have reached the end of the statusCount
+                blockSignal = 0;
+            }
+            else if(*token == '!' || blockSignal) { 
+                if(blockSignal == 0) { // start checking for block numbers
+                    blockSignal = 1;
+                    blockIndex = 0;
+                }
+                else {
+                    statusCount[blockIndex] = atoi(token);
+                    blockIndex++;
+                }
             }
             else {
                 int num = atoi(token);
@@ -639,17 +706,20 @@ void *game_handler(void *arg) {
         }
 
         if( send(sock2 , "0", 1, 0) < 0) {
-            printf("Send failed");
+            printf("Send failed\n");
             return NULL;
         }
         
-        // if (block_count != coords_row) { //checks if screen reset (may need to change later !!!!)
-        //     clear_display();
-        // }
-        // block_count = coords_row;
+        if (clear_signal) { // reset display if there are block changes
+            clear_display();
+            clear_signal = 0;
+        }
+
         renderTiles(coords, coords_row);
-        
-        // strcpy(prev_buffer, buffer);
+        if (blockIndex) {
+            draw_status_text(statusCount, blockIndex, 0xFF);
+        }
+
         usleep(50000); // takes 20 key inputs per second
     }
 
@@ -669,8 +739,6 @@ int main(void)
     printf("thread 1 joined");
     pthread_join(thread_kb, NULL);
     printf("thread 2 joined");
-
-    disconnect_message();
 
     return 0;
 }

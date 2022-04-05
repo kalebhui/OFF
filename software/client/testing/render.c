@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "address_map_arm.h"
+#include <string.h>
 
 
 
@@ -25,6 +26,8 @@ void draw_tile_B(int ,int);
 void draw_tile_C(int ,int);
 void draw_tile_D(int ,int);
 void draw_tile_E(int ,int);
+
+void draw_string(int, int, char *, int, char);
 
 //player and tile type define
 #define PLAYER1 -1
@@ -117,27 +120,33 @@ int main(void)
     rectangle_driver(0,0,320,240,0x0);
 
     player_driver(320, 240, 320, 240);
-
-    // prints disconnected in center of screen
+    int length = 12;
     int base = 64;
     int char_width = 16;
     int center_height = 108;
     char colour = 0xFF;
     int word_len = 12;
-    int disconnect[] = {13, 18, 28, 12, 24, 23, 23, 14, 12, 29, 14, 13};
 
-    for (int i = 0; i < word_len; i++) {
-        char_bp_driver(base + char_width * i, center_height, disconnect[i], colour);
-    }
+    char string[] = "you suck";
+
+    draw_string(base, center_height, string, strlen(string), colour);
+
     return 0;
 }
 
+int convertChar(char c) {
+    int x = c - 87;
+    return x;
+}
 
-
-
-
-
-
+void draw_string(int x1, int y1, char * string, int length, char colour) {
+    int char_width = 16; //changeable for bigger spacing
+    for(int i = 0; i < length; i++) {
+        if (string[i] != ' ') {
+            char_bp_driver(x1 + char_width * i, y1, convertChar(string[i]), colour);
+        }
+    }
+}
 
 
 /////////////////////////////////Driver Codes (should not need to touch) ////////////////////////////////

@@ -25,16 +25,30 @@ void draw_tile_B(int ,int);
 void draw_tile_C(int ,int);
 void draw_tile_D(int ,int);
 void draw_tile_E(int ,int);
+void draw_status_bar(int, int);
+
+// other display functions
+void clear_display();
 
 //player and tile type define
 #define PLAYER1 -1
 #define PLAYER2 -2
+#define STATUSBAR 0
 #define TILE_A  1
 #define TILE_B  2
 #define TILE_C  3
 #define TILE_D  4
 #define TILE_E  5
+
+#define STATUSBARHEIGHT 3
 #define TILESIZE 10
+#define SCREENWIDTH 320
+#define SCREENHEIGHT 240
+
+void clear_display() {
+    player_driver(320, 240, 320, 240);
+    rectangle_driver(0,0,320,240,0x0);
+}
 
 void renderTiles(int tile_arr[][3], int arr_len){
     int tile_type;
@@ -55,6 +69,9 @@ void renderTiles(int tile_arr[][3], int arr_len){
         case PLAYER2:
             half_player_driver(tile_x, tile_y, 2);
             break;
+
+        case STATUSBAR:
+            draw_status_bar(tile_x, tile_y);
 
         case TILE_A:
             draw_tile_A(tile_x, tile_y);
@@ -86,6 +103,11 @@ void renderTiles(int tile_arr[][3], int arr_len){
 
 //tile drawing procedure functions
 
+void draw_status_bar(int x, int y){
+    //define tile drawing procedure here
+    rectangle_driver(x, y, SCREENWIDTH, STATUSBARHEIGHT, 0xFF);
+}
+
 void draw_tile_A(int x, int y){
     //define tile drawing procedure here
     rectangle_driver(x, y, TILESIZE, TILESIZE, 0xAA);
@@ -114,31 +136,33 @@ void draw_tile_E(int x, int y){
 //Main for testing purposes
 int main(void)
 {
-   // sample mains
-   int coords[17][3] = {
-       {10, 190, -1},
-       {300, 30, -2},
-       {290, 40, 5},
-       {300, 40, 5},
-       {310, 40, 5},
-       {0, 200, 2},
-       {10, 200, 2},
-       {20, 200, 2},
-       {50,160,1},
-       {60,160,1},
-       {70,160,1},
-       {100,100,3},
-       {100,110,3},
-       {100,120,3},
-       {200,100,4},
-       {210,90,4},
-       {220,80,4}
-   };
+    clear_display();
+    // sample mains
+    int coords[18][3] = {
+        {10, 190, -1},
+        {300, 30, -2},
+        {0, 210, 0},
+        {290, 40, 5},
+        {300, 40, 5},
+        {310, 40, 5},
+        {0, 200, 2},
+        {10, 200, 2},
+        {20, 200, 2},
+        {50,160,1},
+        {60,160,1},
+        {70,160,1},
+        {100,100,3},
+        {100,110,3},
+        {100,120,3},
+        {200,100,4},
+        {210,90,4},
+        {220,80,4}
+    };
 
 
-   renderTiles(coords, 17);
+    renderTiles(coords, 18);
 
-   return 0;
+    return 0;
 }
 
 

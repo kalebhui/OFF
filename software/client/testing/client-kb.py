@@ -19,6 +19,8 @@ clock = pygame.time.Clock()
 screen_width = 320
 screen_height = 240
 tile_size = 10
+menu_size = 5
+MENUOFFSET = 100
 status_height = 3
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
@@ -37,6 +39,11 @@ red_square = pygame.transform.scale(red_square, (tile_size, tile_size))
 ice_square = pygame.transform.scale(ice_square, (tile_size, tile_size))
 trampoline_square = pygame.transform.scale(trampoline_square, (tile_size, tile_size))
 finish_square = pygame.transform.scale(finish_square, (tile_size, tile_size))
+
+yellow_menu = pygame.transform.scale(yellow_square, (menu_size, menu_size))
+red_menu = pygame.transform.scale(red_square, (menu_size, menu_size))
+finish_menu = pygame.transform.scale(finish_square, (menu_size, menu_size))
+
 player_one = pygame.transform.scale(player_one, (tile_size, tile_size))
 player_two = pygame.transform.scale(player_two, (tile_size, tile_size))
 status_border = pygame.transform.scale(status_border, (screen_width, status_height))
@@ -48,39 +55,63 @@ def run_game():
     # signal that this client should receive data from server
     s1.send('1'.encode())
     while open:
-        changed = False
         clock.tick(20) # number of frames per sec
         screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 open = False
 
-        message = s.recv(10000).decode()
-        s.send('0'.encode()) #signal message received
+        message = s.recv(100000).decode()
+        
         if message[0] == '.':
-            changed = True
-            message = message
+            message = message[2:]
+        
         message = message.split(',')
 
+        # make array for avail blocks left
+        block_index = 0
+        done = 0
+        block_arr = []
+        while not done:
+            if message[block_index] == '!':
+                if block_index:
+                    message = message[block_index + 1:]
+                    done = 1
+            elif block_index:
+                block_arr.append(message[block_index])
+            else:
+                done = 1
+            block_index += 1
+
+        s.send('0'.encode()) #signal message received
         # take input from keyboard and send to server
         key = pygame.key.get_pressed()
         if key[pygame.K_w]:
+            print('w')
             s1.send('w'.encode())
         elif key[pygame.K_a]:
+            print('a')
             s1.send('a'.encode())
         elif key[pygame.K_s]:
+            print('s')
             s1.send('s'.encode())
         elif key[pygame.K_d]:
+            print('d')
             s1.send('d'.encode())
         elif key[pygame.K_r]:
+            print('r')
             s1.send('r'.encode())
         elif key[pygame.K_1]:
+            print('1')
             s1.send('1'.encode())
         elif key[pygame.K_2]:
+            print('2')
             s1.send('2'.encode())
         elif key[pygame.K_3]:
+            print('3')
             s1.send('3'.encode())
         elif key[pygame.K_SPACE]:
+            print('p')
             s1.send('p'.encode())
 
         # output game state to display
@@ -102,6 +133,12 @@ def run_game():
                 img = trampoline_square
             elif tile == 5:
                 img = finish_square
+            elif tile == 1 + MENUOFFSET:
+                img = yellow_menu
+            elif tile == 2 + MENUOFFSET:
+                img = red_menu
+            elif tile == 5 + MENUOFFSET:
+                img = finish_menu
             else:
                 print("ERRRRRRRRRRRRRRROR")
             try:
