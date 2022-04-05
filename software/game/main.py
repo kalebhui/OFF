@@ -1,4 +1,5 @@
 from math import ceil
+import random
 from turtle import color
 import time
 import pygame
@@ -136,6 +137,8 @@ def create_tile_list(self, data, size_x, size_y):
                         img = pygame.transform.scale(self.trampoline_square, (size_x, size_y))
                     elif tile == 5:
                         img = pygame.transform.scale(self.finish_square, (size_x, size_y))
+                    elif tile == 6:
+                        img = pygame.transform.scale(self.gravity_square, (size_x, size_y))
                     img_rect = img.get_rect()
                     img_rect.x = col * size_x
                     img_rect.y = row * size_y
@@ -209,6 +212,7 @@ class World():
         self.blocks_placed = 0
         self.level = level
         self.camera = Camera(level, screen_width + 200)
+        self.enemy_spawn_rate = 0 #changeable
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -217,6 +221,7 @@ class World():
         self.trampoline_square = pygame.image.load('images/trampoline.png')
         self.finish_square = pygame.image.load('images/finish.png')
         self.status_border = pygame.image.load('images/status-border.png')
+        self.gravity_square = pygame.image.load('images/gravity_block.png')
         self.default_tile_list = create_tile_list(self, data, tile_size, tile_size) + create_status_bar(self, avail_blocks, status_tile_size, status_tile_size)
         self.default_avail_blocks = avail_blocks.copy()
         self.avail_blocks = avail_blocks.copy()
@@ -224,7 +229,10 @@ class World():
 
     def update(self):
         draw_text(str((pygame.time.get_ticks() - self.start_time) / 1000), text_font, white, tile_size - 10, 10) #timer for level
-        self.camera.update(playerOne)
+        self.camera.update(playerOne) #update camera relative to p1
+        if random.random() < self.enemy_spawn_rate:
+            random_x = random.randint(self.camera.leftmost_x + tile_size, self.camera.leftmost_x + screen_width - tile_size)
+            enemy_group.add(Enemy(random_x, 0))
         # draw block counts
         offset = 0
         block_offset = screen_width // len(avail_blocks)
@@ -300,6 +308,7 @@ class Player():
         self.vel_x = 0
         self.spawn_coords = coordinate # remember starting coordinates for respawn
         self.block_type = 1 #default block type
+        self.gravity = gravity
 
     #checks if the player is in a block
     def in_block(self):
@@ -316,7 +325,12 @@ class Player():
         self.block_type = 1
 
     def update(self):
+
         if (self.number == 1): #update p1
+
+            if pygame.sprite.spritecollide(self, enemy_group, False): #if you hit an enemy you die
+                self.reset()
+
             change_x = 0
             change_y = 0
 
@@ -324,14 +338,28 @@ class Player():
             onIce = False
             onTrampoline = False
 
-            for tile in world.tile_list:
+            for tile in world.tile_list[:]:
                 if tile[1].colliderect(self.rect.x, self.rect.y + 1, self.width, self.height):
                     onBlock = True #p1 is standing on a block
                     if tile[2] == 3:
                         onIce = True #p1 is standing on ice
                     elif tile[2] == 4:
                         onTrampoline = True
-
+                    elif tile[2] == 6:
+                        world.tile_list.remove(tile)
+                        self.gravity *= -1 #switch the gravity
+                elif tile[1].colliderect(self.rect.x, self.rect.y - 1, self.width, self.height):
+                    onBlock = True #so when gravity is reversed we can't spam s
+                    if tile[2] == 3:
+                        onIce = True
+                    elif tile[2] == 4:
+                        onTrampoline = True
+                    elif tile[2] == 6:
+                        world.tile_list.remove(tile)
+                        self.gravity *= -1 #switch the gravity
+                        self.vel_y = 0
+                        change_y = 0
+                
             # if keystroke is pressed check whether its right or left
             key = pygame.key.get_pressed()
 
@@ -340,6 +368,13 @@ class Player():
                     self.vel_y = -tramp_change_y
                 elif onBlock:
                     self.vel_y = -reg_change_y
+
+            if key[pygame.K_s]:
+                if onTrampoline:
+                    self.vel_y = tramp_change_y
+                elif onBlock:
+                    self.vel_y = reg_change_y
+
             if key[pygame.K_a]:
                 if onIce:
                     self.vel_x = max(self.vel_x - 1, -reg_change_x) #max ice speed
@@ -370,7 +405,7 @@ class Player():
             elif change_x < -reg_change_x:
                 change_x = -reg_change_x
 
-            self.vel_y += gravity
+            self.vel_y += self.gravity
             if self.vel_y > reg_change_y:
                 self.vel_y = reg_change_y
             change_y += self.vel_y
@@ -395,8 +430,7 @@ class Player():
 
             self.rect.y += change_y
             if self.rect.top <= 0:
-                self.rect.top = 0
-                self.vel_y = gravity
+                self.reset()
             elif self.rect.bottom >= game_height: #respawn when touch bottom of screen
                 self.reset()
         
@@ -438,11 +472,34 @@ class Player():
         # draw player at current location
         screen.blit(self.playerImg, camera_adjusted_rect)
 
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(pygame.image.load('images/enemy_block.png'), (tile_size, tile_size))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.real_x = x
+        self.rect.y = y
+
+    def update(self):
+        self.rect.y += 1 #move downwards
+        self.rect.x = self.real_x - world.camera.leftmost_x
+        collide_rect = pygame.Rect(self.real_x, self.rect.y, tile_size, tile_size) #since camera adjustments change x
+        if self.rect.bottom >= game_height - tile_size:
+            self.kill() #remove enemy from game if out of bounds
+        for tile in world.tile_list[:]:
+            if tile[1].colliderect(collide_rect) and not (tile[2] == 5 or tile[2] == 2):
+                world.avail_blocks[tile[2]] += 1
+                world.tile_list.remove(tile)
+                self.kill()
+
 menu = Menu(bitmaps.player_select, bitmaps.level_select)
 #world = World(bitmap, 1) #start at level 1
 world = None #will get intialized in the level select screen after player choooses level
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
 playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
+
+enemy_group = pygame.sprite.Group()
 
 # game loop, will continue until quit
 open = True
@@ -474,6 +531,8 @@ while open:
         world.update()
         playerOne.update()
         playerTwo.update()
+        enemy_group.update()
+        enemy_group.draw(screen) 
 
     pygame.display.update()
 
