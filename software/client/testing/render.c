@@ -27,17 +27,41 @@ void draw_tile_C(int ,int);
 void draw_tile_D(int ,int);
 void draw_tile_E(int ,int);
 
-void draw_string(int, int, char *, int, char);
+// other display functions
+void clear_display();
+
+int convert_char(char);
+void draw_string(int, int, char *, char);
+void draw_string_center_x(int, char *, char);
+void draw_complete_screen(int, int);
 
 //player and tile type define
 #define PLAYER1 -1
 #define PLAYER2 -2
+#define STATUSBAR 0
 #define TILE_A  1
 #define TILE_B  2
 #define TILE_C  3
 #define TILE_D  4
 #define TILE_E  5
+
+#define STATUSBARHEIGHT 3
 #define TILESIZE 10
+#define MENUOFFSET 100
+#define MENUSIZE 5
+#define SCREENWIDTH 320
+#define SCREENHEIGHT 240
+#define MAXBLOCKS 3
+#define GAMEHEIGHT 207
+#define CHARTOINT 87
+#define MAXDIGITS 10
+#define CHARWIDTH 16
+#define CHARHEIGHT 24
+
+void clear_display() {
+    player_driver(320, 240, 320, 240);
+    rectangle_driver(0,0,320,240,0x0);
+}
 
 void renderTiles(int tile_arr[][3], int arr_len){
     int tile_type;
@@ -117,35 +141,74 @@ void draw_tile_E(int x, int y){
 //Main for testing purposes
 int main(void)
 {
-    rectangle_driver(0,0,320,240,0x0);
-
-    player_driver(320, 240, 320, 240);
-    int length = 12;
-    int base = 64;
-    int char_width = 16;
-    int center_height = 108;
-    char colour = 0xFF;
-    int word_len = 12;
-
-    char string[] = "you suck";
-
-    draw_string(base, center_height, string, strlen(string), colour);
+    draw_complete_screen(1232, 9999);
 
     return 0;
 }
 
-int convertChar(char c) {
-    int x = c - 87;
+int convert_char(char c) {
+    int x = 0;
+    if (c >= 97 && c <= 122) {
+        x = c - CHARTOINT;
+    }
+    else if (c >= 48 && c <= 57) {
+        x = c - 48;
+    }
+    else if (c == '!') {
+        x = c + 5;
+    }
+    else if (c == ':') {
+        x = c - 21;
+    }
+    else if (c == '.') {
+        x = c - 10;
+    }
+    
     return x;
 }
 
-void draw_string(int x1, int y1, char * string, int length, char colour) {
-    int char_width = 16; //changeable for bigger spacing
-    for(int i = 0; i < length; i++) {
+void draw_string_center_x(int y1, char * string, char colour) {
+    int x = (SCREENWIDTH - strlen(string) * CHARWIDTH) / 2;
+    draw_string(x, y1, string, colour);
+}
+
+void draw_string(int x1, int y1, char * string, char colour) {
+    int char_width = CHARWIDTH; //changeable for bigger spacing
+    for(int i = 0; i < strlen(string); i++) {
         if (string[i] != ' ') {
-            char_bp_driver(x1 + char_width * i, y1, convertChar(string[i]), colour);
+            char_bp_driver(x1 + char_width * i, y1, convert_char(string[i]), colour);
         }
     }
+}
+
+void draw_complete_screen(int time_finished, int blocks_placed) {
+    clear_display();
+    int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
+    
+    char message[] = "level completed";
+
+    int message_length_timer = 6;
+    int time_finished_copy = time_finished;
+    while (time_finished_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+        message_length_timer++;
+        time_finished_copy /= 10;
+    }
+    char time[message_length_timer];
+    sprintf(time, "time: %d", time_finished);
+    
+    int message_length_blocks = 8;
+    int blocks_placed_copy = blocks_placed;
+    while (blocks_placed_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+        message_length_blocks++;
+        blocks_placed_copy /= 10;
+    }
+    char blocks[message_length_blocks];
+    sprintf(blocks, "blocks: %d", blocks_placed);
+
+    draw_string_center_x(y, message, 0xFF);
+    draw_string_center_x(y + CHARHEIGHT, time, 0xFF);
+    draw_string_center_x(y + CHARHEIGHT * 2, blocks, 0xFF);
+
 }
 
 

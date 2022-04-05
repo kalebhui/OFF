@@ -62,92 +62,93 @@ def run_game():
                 open = False
 
         message = s.recv(100000).decode()
-        
-        if message[0] == '.':
-            message = message[2:]
-        
-        message = message.split(',')
+        if message[0] != '?': # game is over
+            if message[0] == '.':
+                message = message[2:]
+            
+            message = message.split(',')
 
-        # make array for avail blocks left
-        block_index = 0
-        done = 0
-        block_arr = []
-        while not done:
-            if message[block_index] == '!':
-                if block_index:
-                    message = message[block_index + 1:]
+            # make array for avail blocks left
+            block_index = 0
+            done = 0
+            block_arr = []
+            while not done:
+                if message[block_index] == '!':
+                    if block_index:
+                        message = message[block_index + 1:]
+                        done = 1
+                elif block_index:
+                    block_arr.append(message[block_index])
+                else:
                     done = 1
-            elif block_index:
-                block_arr.append(message[block_index])
-            else:
-                done = 1
-            block_index += 1
+                block_index += 1
+
+            # take input from keyboard and send to server
+            key = pygame.key.get_pressed()
+            if key[pygame.K_w]:
+                print('w')
+                s1.send('w'.encode())
+            elif key[pygame.K_a]:
+                print('a')
+                s1.send('a'.encode())
+            elif key[pygame.K_s]:
+                print('s')
+                s1.send('s'.encode())
+            elif key[pygame.K_d]:
+                print('d')
+                s1.send('d'.encode())
+            elif key[pygame.K_r]:
+                print('r')
+                s1.send('r'.encode())
+            elif key[pygame.K_1]:
+                print('1')
+                s1.send('1'.encode())
+            elif key[pygame.K_2]:
+                print('2')
+                s1.send('2'.encode())
+            elif key[pygame.K_3]:
+                print('3')
+                s1.send('3'.encode())
+            elif key[pygame.K_SPACE]:
+                print('p')
+                s1.send('p'.encode())
+
+            # output game state to display
+            for i in range(0, len(message) - 1, 3):
+                tile = int(message[i + 2])
+                if tile == -1:
+                    img = player_one
+                elif tile == -2:
+                    img = player_two
+                elif tile == 0:
+                    img = status_border
+                elif tile == 1:
+                    img = yellow_square
+                elif tile == 2:
+                    img = red_square
+                elif tile == 3:
+                    img = ice_square
+                elif tile == 4:
+                    img = trampoline_square
+                elif tile == 5:
+                    img = finish_square
+                elif tile == 1 + MENUOFFSET:
+                    img = yellow_menu
+                elif tile == 2 + MENUOFFSET:
+                    img = red_menu
+                elif tile == 5 + MENUOFFSET:
+                    img = finish_menu
+                else:
+                    print("ERRRRRRRRRRRRRRROR")
+                try:
+                    img_rect = img.get_rect()
+                    img_rect.x = int(message[i]) 
+                    img_rect.y = int(message[i + 1])
+                    screen.blit(img, img_rect)
+                except:
+                    print(tile)
 
         s.send('0'.encode()) #signal message received
-        # take input from keyboard and send to server
-        key = pygame.key.get_pressed()
-        if key[pygame.K_w]:
-            print('w')
-            s1.send('w'.encode())
-        elif key[pygame.K_a]:
-            print('a')
-            s1.send('a'.encode())
-        elif key[pygame.K_s]:
-            print('s')
-            s1.send('s'.encode())
-        elif key[pygame.K_d]:
-            print('d')
-            s1.send('d'.encode())
-        elif key[pygame.K_r]:
-            print('r')
-            s1.send('r'.encode())
-        elif key[pygame.K_1]:
-            print('1')
-            s1.send('1'.encode())
-        elif key[pygame.K_2]:
-            print('2')
-            s1.send('2'.encode())
-        elif key[pygame.K_3]:
-            print('3')
-            s1.send('3'.encode())
-        elif key[pygame.K_SPACE]:
-            print('p')
-            s1.send('p'.encode())
-
-        # output game state to display
-        for i in range(0, len(message) - 1, 3):
-            tile = int(message[i + 2])
-            if tile == -1:
-                img = player_one
-            elif tile == -2:
-                img = player_two
-            elif tile == 0:
-                img = status_border
-            elif tile == 1:
-                img = yellow_square
-            elif tile == 2:
-                img = red_square
-            elif tile == 3:
-                img = ice_square
-            elif tile == 4:
-                img = trampoline_square
-            elif tile == 5:
-                img = finish_square
-            elif tile == 1 + MENUOFFSET:
-                img = yellow_menu
-            elif tile == 2 + MENUOFFSET:
-                img = red_menu
-            elif tile == 5 + MENUOFFSET:
-                img = finish_menu
-            else:
-                print("ERRRRRRRRRRRRRRROR")
-            try:
-                img_rect = img.get_rect()
-                img_rect.x = int(message[i]) 
-                img_rect.y = int(message[i + 1])
-                screen.blit(img, img_rect)
-            except:
-                print(tile)
 
         pygame.display.update()
 

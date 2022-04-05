@@ -68,6 +68,7 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 PLAYER_SELECT = 0
 LEVEL_SELECT = 1
 GAMEPLAY = 2
+FINISHED = 3
 MENUOFFSET = 100
 
 
@@ -387,8 +388,6 @@ class Player():
         camera_adjusted_rect = self.rect.copy()
         camera_adjusted_rect.x -= world.camera.leftmost_x
         self.adjusted_rect = camera_adjusted_rect.copy()
-        # draw player at current location
-        # screen.blit(self.playerImg, camera_adjusted_rect)
 
 def create_tile_list(self, data, size_x, size_y):
         tile_list = []
@@ -479,16 +478,17 @@ def run_game():
             menu.update(input_p1, input_p2)
         elif world.level_completed:
             if world.level < 5:
-                #draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
-                # text_font, white, screen_width // 2 - 395, screen_height // 2)
-                # print("done")
+                menu.current_menu_screen = FINISHED
+                print(menu.current_menu_screen)
                 pygame.time.delay(3000) # wait for 3 seconds
                 world = World(levels[world.level + 1], world.level + 1) #recreate world with next level bitmap
+                menu.current_menu_screen = GAMEPLAY
+                print(menu.current_menu_screen)
                 changed = True
                 playerOne.reset() #respawn player one
                 playerTwo.reset() #respawn player two
             else:
-                pass #!!!!
+                menu.current_menu_screen = FINISHED
         else:
             world.update(input_p1, input_p2)
             playerOne.update(input_p1)
@@ -549,7 +549,12 @@ def sender ():
             if changed: #signal to clear the display
                 str_tilelist += '.,' 
                 changed = False
-            if menu.current_menu_screen != GAMEPLAY:
+            if menu.current_menu_screen == FINISHED: # signal game is done
+                str_tilelist += f"?,{(world.finish_time) / 1000}, {world.blocks_placed},"
+                for client in clients_arr:
+                    client[0].send(str_tilelist.encode())
+                    client[0].recv(1).decode(FORMAT)
+            elif menu.current_menu_screen != GAMEPLAY:
                 if menu.current_menu_screen == PLAYER_SELECT:
                     tile_list = menu.player_select_tile_list
                 elif menu.current_menu_screen == LEVEL_SELECT:
@@ -563,10 +568,7 @@ def sender ():
             else:
                 str_tilelist += '!,' 
                 for key in world.avail_blocks:
-                    # xcoord = status_tile_size * (offset * 3 + 2)
-                    # ycoord = game_height + (screen_height - game_height) // 2 + bar_height
                     str_tilelist += f"{world.avail_blocks[key]},"
-                    # offset += 1
                 str_tilelist += '!,' 
                 str_tilelist += f"{playerOne.adjusted_rect.x},{playerOne.adjusted_rect.y},-1,"
                 str_tilelist += f"{playerTwo.adjusted_rect.x},{playerTwo.adjusted_rect.y},-2,"

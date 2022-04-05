@@ -50,6 +50,8 @@
 #define GAMEHEIGHT 207
 #define CHARTOINT 87
 #define MAXDIGITS 10
+#define CHARWIDTH 16
+#define CHARHEIGHT 24
 
 int open_physical (int);
 void * map_physical (int, unsigned int, unsigned int);
@@ -82,7 +84,8 @@ int create_socket();
 // messages
 int convert_char(char);
 void draw_string(int, int, char *, char);
-// void disconnect_message();!!!!
+void draw_string_center_x(int, char *, char);
+void draw_complete_screen(int, int);
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// Render Functions ////////////////////////////////
@@ -202,12 +205,33 @@ void draw_tile_E(int x, int y, int tileSize){
 //////////////////////////////////////////////////////////////////////////////
 
 int convert_char(char c) {
-    int x = c - CHARTOINT;
-    return c - CHARTOINT;
+    int x = 0;
+    if (c >= 97 && c <= 122) {
+        x = c - CHARTOINT;
+    }
+    else if (c >= 48 && c <= 57) {
+        x = c - 48;
+    }
+    else if (c == '!') {
+        x = c + 5;
+    }
+    else if (c == ':') {
+        x = c - 21;
+    }
+    else if (c == '.') {
+        x = c - 10;
+    }
+    
+    return x;
+}
+
+void draw_string_center_x(int y1, char * string, char colour) {
+    int x = (SCREENWIDTH - strlen(string) * CHARWIDTH) / 2;
+    draw_string(x, y1, string, colour);
 }
 
 void draw_string(int x1, int y1, char * string, char colour) {
-    int char_width = 16; //changeable for bigger spacing
+    int char_width = CHARWIDTH; //changeable for bigger spacing
     for(int i = 0; i < strlen(string); i++) {
         if (string[i] != ' ') {
             char_bp_driver(x1 + char_width * i, y1, convert_char(string[i]), colour);
@@ -239,6 +263,36 @@ void draw_status_text(int num[], int length, char colour) {
             }
         }
     }
+}
+
+void draw_complete_screen(int time_finished, int blocks_placed) {
+    clear_display();
+    int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
+    
+    char message[] = "level completed";
+
+    int message_length_timer = 6;
+    int time_finished_copy = time_finished;
+    while (time_finished_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+        message_length_timer++;
+        time_finished_copy /= 10;
+    }
+    char time[message_length_timer];
+    sprintf(time, "time: %d", time_finished);
+    
+    int message_length_blocks = 8;
+    int blocks_placed_copy = blocks_placed;
+    while (blocks_placed_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+        message_length_blocks++;
+        blocks_placed_copy /= 10;
+    }
+    char blocks[message_length_blocks];
+    sprintf(blocks, "blocks: %d", blocks_placed);
+
+    draw_string_center_x(y, message, 0xFF);
+    draw_string_center_x(y + CHARHEIGHT, time, 0xFF);
+    draw_string_center_x(y + CHARHEIGHT * 2, blocks, 0xFF);
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -650,6 +704,9 @@ void *game_handler(void *arg) {
     int clear_signal = 0;
     int blockIndex = 0; //signal for data containing block amounts for p2
     int blockSignal = 0;
+    int complete = 0;
+    int timeFinish = 0;
+    int blocksPlaced = 0;
 
     while (1) {
         coords_row = 0;
@@ -673,51 +730,68 @@ void *game_handler(void *arg) {
         // int changed = strcmp(prev_buffer, buffer); 
         char * token = strtok(buffer, ",");
         
-        while( token != NULL ) {
-            if (*token == '.') {
-                clear_signal = 1;
+        if (*token == '?') {
+            if (!complete) {
+                for (int i = 0; i < 2; i++) {
+                    token = strtok(NULL, ",");
+                    if (i == 0) {
+                        timeFinish = atoi(token);
+                    }
+                    else if (i == 1) {
+                        blocksPlaced = atoi(token);
+                    }
+                }
+                draw_complete_screen(timeFinish, blocksPlaced);
+                complete = 1;
             }
-            else if(*token == '&') { // '&' signals end of coordinates
-                break;
-            }
-            else if(*token == '!' && blockSignal) { //If we recieve the second ! we have reached the end of the statusCount
-                blockSignal = 0;
-            }
-            else if(*token == '!' || blockSignal) { 
-                if(blockSignal == 0) { // start checking for block numbers
-                    blockSignal = 1;
-                    blockIndex = 0;
+        }
+        else {
+            while( token != NULL ) {
+                complete = 0;
+                if (*token == '.') {
+                    clear_signal = 1;
+                }
+                else if(*token == '&') { // '&' signals end of coordinates
+                    break;
+                }
+                else if(*token == '!' && blockSignal) { //If we recieve the second ! we have reached the end of the statusCount
+                    blockSignal = 0;
+                }
+                else if(*token == '!' || blockSignal) { 
+                    if(blockSignal == 0) { // start checking for block numbers
+                        blockSignal = 1;
+                        blockIndex = 0;
+                    }
+                    else {
+                        statusCount[blockIndex] = atoi(token);
+                        blockIndex++;
+                    }
                 }
                 else {
-                    statusCount[blockIndex] = atoi(token);
-                    blockIndex++;
+                    int num = atoi(token);
+                    coords[coords_row][coords_col] = num;
+                    coords_col++;
+                    if(coords_col == 3) {
+                        coords_col = 0;
+                        coords_row++;
+                    }
                 }
+                token = strtok(NULL, ",");
             }
-            else {
-                int num = atoi(token);
-                coords[coords_row][coords_col] = num;
-                coords_col++;
-                if(coords_col == 3) {
-                    coords_col = 0;
-                    coords_row++;
-                }
+            
+            if (clear_signal) { // reset display if there are block changes
+                clear_display();
+                clear_signal = 0;
             }
-            token = strtok(NULL, ",");
-        }
 
+            renderTiles(coords, coords_row);
+            if (blockIndex) {
+                draw_status_text(statusCount, blockIndex, 0xFF);
+            }
+        }
         if( send(sock2 , "0", 1, 0) < 0) {
             printf("Send failed\n");
             return NULL;
-        }
-        
-        if (clear_signal) { // reset display if there are block changes
-            clear_display();
-            clear_signal = 0;
-        }
-
-        renderTiles(coords, coords_row);
-        if (blockIndex) {
-            draw_status_text(statusCount, blockIndex, 0xFF);
         }
 
         usleep(50000); // takes 20 key inputs per second
