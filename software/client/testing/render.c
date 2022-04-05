@@ -113,29 +113,37 @@ void renderTiles(int tile_arr[][3], int arr_len){
 
 //tile drawing procedure functions
 
-void draw_tile_A(int x, int y){
+void draw_tile_A(int x, int y, int tileSize){ //Normal
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0xAA);
+    rectangle_driver(x, y, tileSize, tileSize, 0xDD);
 }
 
-void draw_tile_B(int x, int y){
+void draw_tile_B(int x, int y, int tileSize){ //Red
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0xE0);
+    rectangle_driver(x, y, tileSize, tileSize, 0xE0);
 }
 
-void draw_tile_C(int x, int y){
+void draw_tile_C(int x, int y, int tileSize){ //Ice
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0x03);
+    rectangle_driver(x, y, tileSize, tileSize, 0x1F);
+    rectangle_driver(x+4, y+0, 2, 2, 0xFF);
+    rectangle_driver(x+2, y+2, 2, 2, 0xFF);
+    rectangle_driver(x+0, y+4, 2, 2, 0xFF);
+    rectangle_driver(x+6, y+4, 2, 2, 0xFF);
+    rectangle_driver(x+8, y+2, 2, 2, 0xFF);
+    rectangle_driver(x+4, y+6, 2, 2, 0xFF);
+    rectangle_driver(x+2, y+8, 2, 2, 0xFF);
 }
 
-void draw_tile_D(int x, int y){
+void draw_tile_D(int x, int y, int tileSize){  //trap
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0xDD);
+    rectangle_driver(x, y, tileSize, 3, 0xE0);
+    rectangle_driver(x, y+3, tileSize, tileSize-3, 0xDD);
 }
 
-void draw_tile_E(int x, int y){
+void draw_tile_E(int x, int y, int tileSize){  //Finish
     //define tile drawing procedure here
-    rectangle_driver(x, y, TILESIZE, TILESIZE, 0x38);
+    rectangle_driver(x, y, tileSize, tileSize, 0x38);
 }
 
 //Main for testing purposes
