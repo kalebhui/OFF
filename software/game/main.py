@@ -212,7 +212,7 @@ class World():
         self.blocks_placed = 0
         self.level = level
         self.camera = Camera(level, screen_width + 200)
-        self.enemy_spawn_rate = 0 #changeable
+        self.enemy_spawn_rate = 0.1 #changeable
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -233,6 +233,8 @@ class World():
         if random.random() < self.enemy_spawn_rate:
             random_x = random.randint(self.camera.leftmost_x + tile_size, self.camera.leftmost_x + screen_width - tile_size)
             enemy_group.add(Enemy(random_x, 0))
+            a = pygame.sprite.Group.sprites(enemy_group)
+            print(a[0].rect)
         # draw block counts
         offset = 0
         block_offset = screen_width // len(avail_blocks)

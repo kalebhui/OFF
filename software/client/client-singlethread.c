@@ -39,6 +39,8 @@
 #define TILE_C  3
 #define TILE_D  4
 #define TILE_E  5
+#define TILE_F  7
+#define TILE_G  6
 
 #define STATUSBARHEIGHT 3
 #define TILESIZE 10
@@ -69,6 +71,8 @@ void draw_tile_B(int, int, int);
 void draw_tile_C(int, int, int);
 void draw_tile_D(int, int, int);
 void draw_tile_E(int, int, int);
+void draw_tile_F(int, int, int);
+void draw_tile_G(int, int, int);
 
 // other display functions
 void clear_display();
@@ -140,6 +144,14 @@ void renderTiles(int tile_arr[][3], int arr_len){
             draw_tile_E(tile_x, tile_y, TILESIZE);
             break;
 
+        case TILE_F:
+            draw_tile_F(tile_x, tile_y, TILESIZE);
+            break;
+
+        case TILE_G:
+            draw_tile_G(tile_x, tile_y, TILESIZE);
+            break;
+
         case TILE_A + MENUOFFSET:
             draw_tile_A(tile_x, tile_y, MENUSIZE);
             break;
@@ -206,6 +218,27 @@ void draw_tile_D(int x, int y, int tileSize){  //trap
 void draw_tile_E(int x, int y, int tileSize){  //Finish
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0x38);
+}
+
+void draw_tile_F(int x, int y, int tileSize){  //TNT
+    //define tile drawing procedure here
+    rectangle_driver(x, y, tileSize, tileSize, 0xE9);
+    rectangle_driver(x+2, y+0, 6, tileSize, 0x85);
+    rectangle_driver(x+0, y+3, tileSize, 4, 0x25);
+    rectangle_driver(x+0, y+3, 3, 1, 0xFF);
+    rectangle_driver(x+1, y+4, 1, 3, 0xFF); 
+    rectangle_driver(x+3, y+3, 1, 4, 0xFF);
+    rectangle_driver(x+4, y+4, 1, 1, 0xFF); 
+    rectangle_driver(x+5, y+5, 1, 1, 0xFF);
+    rectangle_driver(x+6, y+3, 1, 4, 0xFF); 
+    rectangle_driver(x+7, y+3, 3, 1, 0xFF);
+    rectangle_driver(x+8, y+4, 1, 3, 0xFF); 
+}
+
+void draw_tile_G(int x, int y, int tileSize){  //black hole?
+    //define tile drawing procedure here
+    rectangle_driver(x, y, tileSize, tileSize, 0x25);
+    rectangle_driver(x+3, y+3, 4, 4, 0xFF);
 }
 
 //////////////////////////////////////////////////////////////////////////////

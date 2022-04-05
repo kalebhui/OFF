@@ -30,6 +30,8 @@ red_square = pygame.image.load('images/red.png')
 ice_square = pygame.image.load('images/ice.png')
 trampoline_square = pygame.image.load('images/trampoline.png')
 finish_square = pygame.image.load('images/finish.png')
+bomb_square = pygame.image.load('images/enemy_block.png')
+gravity_square = pygame.image.load('images/gravity_block.png')
 player_one = pygame.image.load('images/player-one.png')
 player_two = pygame.image.load('images/player-two.png')
 status_border = pygame.image.load('images/status-border.png')
@@ -39,6 +41,8 @@ red_square = pygame.transform.scale(red_square, (tile_size, tile_size))
 ice_square = pygame.transform.scale(ice_square, (tile_size, tile_size))
 trampoline_square = pygame.transform.scale(trampoline_square, (tile_size, tile_size))
 finish_square = pygame.transform.scale(finish_square, (tile_size, tile_size))
+bomb_square = pygame.transform.scale(bomb_square, (tile_size, tile_size))
+gravity_square = pygame.transform.scale(gravity_square, (tile_size, tile_size))
 
 yellow_menu = pygame.transform.scale(yellow_square, (menu_size, menu_size))
 red_menu = pygame.transform.scale(red_square, (menu_size, menu_size))
@@ -132,6 +136,10 @@ def run_game():
                     img = trampoline_square
                 elif tile == 5:
                     img = finish_square
+                elif tile == 6:
+                    img = gravity_square
+                elif tile == 7:
+                    img = bomb_square
                 elif tile == 1 + MENUOFFSET:
                     img = yellow_menu
                 elif tile == 2 + MENUOFFSET:
