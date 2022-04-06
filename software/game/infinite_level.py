@@ -82,7 +82,7 @@ def draw_text(text, font, text_col, x, y):
 PLAYER_SELECT = 0
 LEVEL_SELECT = 1
 GAMEPLAY = 2
-INFINITE = 11
+INFINITE = 6
 
 class Menu():
     def __init__(self, player_select, level_select):
@@ -192,6 +192,28 @@ def create_status_bar(self, data, size_x, size_y):
 
     return tile_list
 
+class InfiniteCamera(): #?!?!
+    def __init__(self):
+        self.bottom_y = 0
+        self.infinite_count = infinite_count_default
+        self.infinite_divisor = infinite_divisor_default
+        self.screen_shift = screen_shift_default
+    
+    #takes in a tile which has a x and y coord and returns whether they are on screen
+    def onScreen(self, tile):
+        return tile.bottom <= (self.bottom_y + game_height)
+
+    def update(self):
+        # this code will gradually speed up the falling process
+        if self.infinite_count % self.infinite_divisor == 0:
+            self.bottom_y -= self.screen_shift
+            if self.infinite_count % 100 == 0:
+                if self.infinite_divisor > 2:
+                    self.infinite_divisor -= 1
+                elif self.screen_shift < 5:
+                    self.screen_shift += 1
+        self.infinite_count += 1
+
 class World():
     def __init__(self, data, level):
         self.default_tile_list = []
@@ -267,64 +289,20 @@ class World():
         if key[pygame.K_r]: # reset to default
             self.tile_list = self.default_tile_list.copy()
             self.avail_blocks = self.default_avail_blocks.copy()
-
-        # #infinite level logic
-        # if self.infinite_count % self.infinite_divisor == 0:
-        #     for tile in self.tile_list:
-        #         if (tile[2] != -1): #check if bar
-        #             tile[1].y += self.screen_shift
-        #             # print(tile)
-        # self.infinite_count += 1
-        # if self.infinite_count % 100 == 0:
-        #     if self.infinite_divisor > 2:
-        #         self.infinite_divisor -= 1
-        #     elif self.screen_shift < 5:
-        #         self.screen_shift += 1
         
-        index = 0
+        index = 0 #?!?!
         for tile in self.tile_list:
             if tile[2] == -1: #to keep the status bar in view
                 screen.blit(tile[0], tile[1])
             elif tile[1].y > game_height: #if the block is part of the status bar
                 screen.blit(tile[0], tile[1])
             elif self.camera.onScreen(tile[1]): #if the tile is within camera view
-                    camera_adjusted_rect = tile[1].copy()
-                    camera_adjusted_rect.y = tile[1].y - self.camera.bottom_y #readjust its x coordinate so its within screen boundaries
-                    screen.blit(tile[0], camera_adjusted_rect) # draw each tile
+                camera_adjusted_rect = tile[1].copy()
+                camera_adjusted_rect.y = tile[1].y - self.camera.bottom_y #readjust its x coordinate so its within screen boundaries
+                screen.blit(tile[0], camera_adjusted_rect) # draw each tile
             else:
                 self.tile_list.pop(index)
-            # print(self.tile_list)
             index += 1
-        
-
-class InfiniteCamera():
-    def __init__(self):
-        self.bottom_y = 0
-        self.infinite_count = infinite_count_default
-        self.infinite_divisor = infinite_divisor_default
-        self.screen_shift = screen_shift_default
-    
-    #takes in a tile which has a x and y coord and returns whether they are on screen
-    def onScreen(self, tile):
-        if tile.bottom >= self.bottom_y: # !!!!
-            return True
-        return False
-
-    def update(self):
-        # if self.infinite_count % self.infinite_divisor == 0:
-        self.bottom_y -= 0.5
-        # self.infinite_count += 1
-        # if self.infinite_count % 100 == 0:
-        #     if self.infinite_divisor > 2:
-        #         self.infinite_divisor -= 1
-        #     elif self.screen_shift < 5:
-        #         self.screen_shift += 1
-            
-        # self.leftmost_x = playerOne.rect.x - screen_width // 2 #camera is relative to player one position
-        # if self.leftmost_x < 0:
-        #     self.leftmost_x = 0
-        # elif self.leftmost_x > self.max_x - screen_width:
-        #     self.leftmost_x = self.max_x - screen_width
 
 class Player():
     def __init__(self, image_path, coordinate, playerNumber):
@@ -431,8 +409,11 @@ class Player():
                 self.rect.top = world.camera.bottom_y
                 self.vel_y = gravity
             elif self.rect.bottom >= game_height + world.camera.bottom_y: #respawn when touch bottom of screen
-                self.rect.x = self.spawn_coords[0]
-                self.rect.y = self.spawn_coords[1] + world.camera.bottom_y
+                if world.level == INFINITE:
+                    world.level_completed = True #?!?!
+                else:
+                    self.rect.x = self.spawn_coords[0]
+                    self.rect.y = self.spawn_coords[1] + world.camera.bottom_y
         
         elif (self.number == 2): #update p2
             change_x = 0
@@ -478,7 +459,7 @@ class Player():
             #screen.blit(self.playerImg, self.rect)
 
 menu = Menu(bitmaps.player_select, bitmaps.level_select)
-world = World(bitmap, 1)
+world = World(bitmap, INFINITE)
 playerOne = Player('images/player-one.png', spawn_coords_p1, 1)
 playerTwo = Player('images/player-two.png', spawn_coords_p2, 2)
 

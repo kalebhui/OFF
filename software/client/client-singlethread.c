@@ -314,22 +314,11 @@ void draw_complete_screen(int time_finished, int blocks_placed) {
     
     char message[] = "level completed";
 
-    int message_length_timer = 7; // time: .s
+    int message_length_timer = 7;
     int time_finished_copy = time_finished;
-    int decimals = 0;
-    int count = 0;
-    
+    int decimals = time_finished % 1000; // 3 decimal places
     // used too divide up numbers larger than 10 into individual digits
-    // also counts up to 3 decimal places
-    while (time_finished_copy > 0) { 
-        int result = 1;
-        if (count < 3) {
-            for (int i = 0; i < count; i++) {
-                result *= 10;
-            }
-            decimals += result * (time_finished_copy % 10);
-            count++;
-        }
+    while (time_finished_copy > 0) {
         message_length_timer++;
         time_finished_copy /= 10;
     }
@@ -572,7 +561,7 @@ int unmap_physical(void * virtual_base, unsigned int span)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-////////////////////////////Keyboard Drivers//////////////////////////////////
+//////////////////////////// Keyboard Drivers ////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
 char cur_key = '/';
@@ -722,7 +711,7 @@ char get_keyvalue(int kbd_ptr){
 }
 
 //////////////////////////////////////////////////////////////////////////////
-///////////////////////////Socket Communication///////////////////////////////
+/////////////////////////// Socket Communication /////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
 int create_socket() {
@@ -763,6 +752,19 @@ void *game_handler(void *arg) {
     char key_v;
     char * buffer = malloc(buffer_size);
     int valread;
+    int coords_row = 0;
+    int coords_col = 0;
+    int coords[1000][3] = {0};
+    int statusCount[MAXBLOCKS] = {0};
+    int signal = 1;
+    int clear_signal = 0;
+    int blockIndex = 0;
+    int blockSignal = 0;
+    int complete = 0;
+    int timeFinish = 0;
+    int blocksPlaced = 0;
+    int mode = -1;
+    int prevMode;
 
     if(sock1 == -1 || sock2 == -1) {
         printf("connection failed \n");
@@ -779,20 +781,6 @@ void *game_handler(void *arg) {
         printf("Send failed\n");
         return NULL;
     }
-
-    int coords_row = 0;
-    int coords_col = 0;
-    int coords[1000][3] = {0};
-    int statusCount[MAXBLOCKS] = {0};
-    int signal = 1;
-    int clear_signal = 0;
-    int blockIndex = 0; //signal for data containing block amounts for p2
-    int blockSignal = 0;
-    int complete = 0;
-    int timeFinish = 0;
-    int blocksPlaced = 0;
-    int mode = -1;
-    int prevMode;
 
     while (1) {
         coords_row = 0;

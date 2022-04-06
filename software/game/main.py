@@ -43,6 +43,11 @@ if (ice_blk_count):
 if (tramp_blk_count):
     avail_blocks[4] = tramp_blk_count
 
+#infinite level settings
+screen_shift_default = 1
+infinite_count_default = 0
+infinite_divisor_default = 5
+
 #default map setting
 screen = pygame.display.set_mode((screen_width, screen_height)) #replace later with code to output to framebuffer
 pygame.display.set_caption("OFF: Outwit or Fall Flat")
@@ -57,6 +62,7 @@ def draw_text(text, font, text_col, x, y):
 PLAYER_SELECT = 0
 LEVEL_SELECT = 1
 GAMEPLAY = 2
+INFINITE = 6
 
 class Menu():
     def __init__(self, player_select, level_select):
@@ -90,19 +96,22 @@ class Menu():
                 screen.blit(tile[0], tile[1])
         elif self.current_menu_screen == LEVEL_SELECT:
             if key[pygame.K_1]:
-                world = World(levels[0], 1) #intializes world with proper level
+                world = World(levels[1], 1) #intializes world with proper level
                 self.current_menu_screen = GAMEPLAY
             elif key[pygame.K_2]:
-                world = World(levels[1], 2)
+                world = World(levels[2], 2)
                 self.current_menu_screen = GAMEPLAY
             elif key[pygame.K_3]:
-                world = World(levels[2], 3)
+                world = World(levels[3], 3)
                 self.current_menu_screen = GAMEPLAY
             elif key[pygame.K_4]:
-                world = World(levels[3], 4)
+                world = World(levels[4], 4)
                 self.current_menu_screen = GAMEPLAY
             elif key[pygame.K_5]:
-                world = World(levels[4], 5)
+                world = World(levels[5], 5)
+                self.current_menu_screen = GAMEPLAY
+            elif key[pygame.K_6]:
+                world = World(bitmaps.infinite_level, INFINITE)
                 self.current_menu_screen = GAMEPLAY
             for tile in self.level_select_tile_list:
                 screen.blit(tile[0], tile[1])
@@ -163,7 +172,6 @@ def create_status_bar(self, data, size_x, size_y):
             img = pygame.transform.scale(self.finish_square, (size_x, size_y))
         img_rect = img.get_rect()
         # space out blocks horizontally
-        # img_rect.x = size_x * (offset * 4 + 2)
         img_rect.centerx = block_offset * offset + block_offset // 2
         # center the blocks vertically
         img_rect.centery = game_height + (screen_height - game_height) // 2 + bar_height 
@@ -183,8 +191,9 @@ def create_status_bar(self, data, size_x, size_y):
 class Camera():
     def __init__(self, level, level_width = None):
         self.leftmost_x = 0
+        self.bottom_y = 0
         if level_width == None:
-            level_bitmap = levels[level - 1] #0 indexing
+            level_bitmap = levels[level] #0 indexing
             self.max_x = len(level_bitmap[0]) * tile_size
         else:
             self.max_x = level_width
@@ -202,6 +211,29 @@ class Camera():
         elif self.leftmost_x > self.max_x - screen_width:
             self.leftmost_x = self.max_x - screen_width
 
+class InfiniteCamera():
+    def __init__(self):
+        self.bottom_y = 0
+        self.leftmost_x = 0
+        self.infinite_count = infinite_count_default
+        self.infinite_divisor = infinite_divisor_default
+        self.screen_shift = screen_shift_default
+    
+    #takes in a tile which has a x and y coord and returns whether they are on screen
+    def onScreen(self, tile):
+        return tile.bottom <= (self.bottom_y + game_height)
+
+    def update(self):
+        # this code will gradually speed up the falling process
+        if self.infinite_count % self.infinite_divisor == 0:
+            self.bottom_y -= self.screen_shift
+            if self.infinite_count % 50 == 0:
+                if self.infinite_divisor > 2:
+                    self.infinite_divisor -= 1
+                elif self.screen_shift < 2:
+                    self.screen_shift += 0.5
+        self.infinite_count += 1
+
 class World():
     def __init__(self, data, level):
         self.default_tile_list = []
@@ -211,8 +243,12 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.camera = Camera(level)
         self.enemy_spawn_rate = 0 #changeable
+
+        if (level == INFINITE):
+            self.camera = InfiniteCamera()
+        else:
+            self.camera = Camera(level)
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -229,7 +265,10 @@ class World():
 
     def update(self):
         draw_text(str((pygame.time.get_ticks() - self.start_time) / 1000), text_font, white, tile_size - 10, 10) #timer for level
-        self.camera.update(playerOne) #update camera relative to p1
+        if self.level == INFINITE:
+            self.camera.update()
+        else:
+            self.camera.update(playerOne) #update camera relative to p1
         if random.random() < self.enemy_spawn_rate:
             random_x = random.randint(self.camera.leftmost_x + tile_size, self.camera.leftmost_x + screen_width - tile_size)
             enemy_group.add(Enemy(random_x, 0))
@@ -285,15 +324,24 @@ class World():
             self.avail_blocks = self.default_avail_blocks.copy()
             print(self.avail_blocks)
 
+        index = 0
         for tile in self.tile_list:
             if tile[2] == -1: #to keep the status bar in view
                 screen.blit(tile[0], tile[1])
             elif tile[1].y > (game_height - bar_height): #if the block is part of the status bar
                 screen.blit(tile[0], tile[1])
             elif self.camera.onScreen(tile[1]): #if the tile is within camera view
+                if self.level == INFINITE:
+                    camera_adjusted_rect = tile[1].copy()
+                    camera_adjusted_rect.y = tile[1].y - self.camera.bottom_y #readjust its x coordinate so its within screen boundaries
+                    screen.blit(tile[0], camera_adjusted_rect) # draw each tile
+                else:
                     camera_adjusted_rect = tile[1].copy()
                     camera_adjusted_rect.x -= self.camera.leftmost_x #readjust its x coordinate so its within screen boundaries
                     screen.blit(tile[0], camera_adjusted_rect) # draw each tile
+            elif self.level == INFINITE:
+                self.tile_list.pop(index) #remove tile if no longer on screen in infinite level
+            index += 1
 
 class Player():
     def __init__(self, image_path, coordinate, playerNumber):
@@ -330,7 +378,10 @@ class Player():
         if (self.number == 1): #update p1
 
             if pygame.sprite.spritecollide(self, enemy_group, False): #if you hit an enemy you die
-                self.reset()
+                if world.level == INFINITE:
+                    world.level_completed
+                else:
+                    self.reset()
 
             change_x = 0
             change_y = 0
@@ -438,9 +489,15 @@ class Player():
                 
             self.rect.y += change_y
             
-            if self.rect.top <= 0:
-                self.reset()
-            elif self.rect.bottom >= game_height: #respawn when touch bottom of screen
+            
+            if world.level == INFINITE:
+                if self.rect.bottom >= game_height + world.camera.bottom_y:
+                    world.level_completed = True
+                elif self.rect.top <= world.camera.bottom_y:
+                    self.rect.top = world.camera.bottom_y
+                    self.vel_y = 0
+                    self.change_y = 0
+            elif self.rect.bottom >= game_height + world.camera.bottom_y or self.rect.top <= world.camera.bottom_y: #respawn when touch bottom of screen
                 self.reset()
         
         elif (self.number == 2): #update p2
@@ -471,15 +528,20 @@ class Player():
                 self.rect.right = screen_width + world.camera.leftmost_x
 
             self.rect.y += change_y
-            if self.rect.top <= 0:
-                self.rect.top = 0
-            elif self.rect.bottom >= game_height:
-                self.rect.bottom = game_height
+            if self.rect.top <= world.camera.bottom_y:
+                self.rect.top = world.camera.bottom_y
+            elif self.rect.bottom >= game_height + world.camera.bottom_y:
+                self.rect.bottom = game_height + world.camera.bottom_y
 
-        camera_adjusted_rect = self.rect.copy()
-        camera_adjusted_rect.x -= world.camera.leftmost_x
-        # draw player at current location
-        screen.blit(self.playerImg, camera_adjusted_rect)
+        if world.level == INFINITE:
+            camera_adjusted_rect = self.rect.copy()
+            camera_adjusted_rect.y = -(world.camera.bottom_y - self.rect.y)
+            screen.blit(self.playerImg, camera_adjusted_rect)
+        else:
+            camera_adjusted_rect = self.rect.copy()
+            camera_adjusted_rect.x -= world.camera.leftmost_x
+            # draw player at current location
+            screen.blit(self.playerImg, camera_adjusted_rect)
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -530,6 +592,14 @@ while open:
             pygame.display.update() #display the message
             pygame.time.delay(3000) # wait for 3 seconds
             world = World(levels[world.level + 1], world.level + 1) #recreate world with next level bitmap
+            playerOne.reset() #respawn player one
+            playerTwo.reset() #respawn player two
+        elif world.level == 5:
+            draw_text(f"Congratulations! You have completed the level in {(world.finish_time - world.start_time) / 1000}s, with {world.blocks_placed} blocks placed!", 
+            text_font, white, screen_width // 2 - 300, screen_height // 2)
+            pygame.display.update() #display the message
+            pygame.time.delay(3000) # wait for 3 seconds
+            world = World(bitmaps.infinite_level, INFINITE) #recreate world with next level bitmap
             playerOne.reset() #respawn player one
             playerTwo.reset() #respawn player two
         else:
