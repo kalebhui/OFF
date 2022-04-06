@@ -107,9 +107,9 @@ module vga_onchip_interface (
 		end	
 	else 
 		begin
-			video_r <= { { 3 {pixel_data[7]} } , { 3 {pixel_data[6]} } , { 2{pixel_data[5]} } };
-			video_g <= { { 3 {pixel_data[4]} } , { 3 {pixel_data[3]} } , { 2{pixel_data[2]} } };
-			video_b <= { { 4 {pixel_data[1]} } , { 4 {pixel_data[0]} } };
+			video_r <= {  {pixel_data[7:5]}  ,  {pixel_data[7:5]}  ,  {pixel_data[7:6]}  };
+			video_g <= {  {pixel_data[4:2]}  ,  {pixel_data[4:2]}  ,  {pixel_data[4:3]}  };
+			video_b <= {  {pixel_data[1:0]}  ,  {pixel_data[1:0]}  ,  {pixel_data[1:0]}  ,  {pixel_data[1:0]}  };
 		end
 end
 
@@ -189,6 +189,7 @@ end
 	///////////// VGA color Generator  ////////////
 	wire[17:0] 					video_address;
 	wire[7:0]					pixel_data;
+
 	assign video_address = {y_pos[9:1] , x_pos[9:1]};	//resulotion in frame buffer is half of display resolution
 														//divide position by 2
 
