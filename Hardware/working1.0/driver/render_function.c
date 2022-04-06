@@ -20,12 +20,26 @@ int char_bp_driver(int, int, int, char);  //x1, y1, character_sel, color
 int half_player_driver(int, int, int);  //x, y, player_num
 
 //tile drawing functions
-void draw_tile_A(int ,int);
-void draw_tile_B(int ,int);
-void draw_tile_C(int ,int);
-void draw_tile_D(int ,int);
-void draw_tile_E(int ,int);
+void draw_tile_A(int ,int , int);
+void draw_tile_B(int ,int , int);
+void draw_tile_C(int ,int , int);
+void draw_tile_D(int ,int , int);
+void draw_tile_E(int ,int , int);
+void draw_tile_F(int ,int , int);
+void draw_tile_G(int ,int , int);
 void draw_status_bar(int, int);
+
+//draw static backgrounds
+void draw_sun(int, int);
+void draw_daytime_cloud(int, int);
+void draw_daytime_tree(int, int);
+void draw_daytime_bg();
+
+void draw_moon(int, int);
+void draw_star(int, int);
+void draw_night_cloud(int, int);
+void draw_night_tree(int, int);
+void draw_night_bg();
 
 // other display functions
 void clear_display();
@@ -39,6 +53,8 @@ void clear_display();
 #define TILE_C  3
 #define TILE_D  4
 #define TILE_E  5
+#define TILE_F  6
+#define TILE_G  7
 
 #define STATUSBARHEIGHT 3
 #define TILESIZE 10
@@ -72,25 +88,34 @@ void renderTiles(int tile_arr[][3], int arr_len){
 
         case STATUSBAR:
             draw_status_bar(tile_x, tile_y);
+            break;
 
         case TILE_A:
-            draw_tile_A(tile_x, tile_y);
+            draw_tile_A(tile_x, tile_y, 10);
             break;
 
         case TILE_B:
-            draw_tile_B(tile_x, tile_y);
+            draw_tile_B(tile_x, tile_y, 10);
             break;
 
         case TILE_C:
-            draw_tile_C(tile_x, tile_y);
+            draw_tile_C(tile_x, tile_y, 10);
             break;
 
         case TILE_D:
-            draw_tile_D(tile_x, tile_y);
+            draw_tile_D(tile_x, tile_y, 10);
             break;
 
         case TILE_E:
-            draw_tile_E(tile_x, tile_y);
+            draw_tile_E(tile_x, tile_y, 10);
+            break;
+
+        case TILE_F:
+            draw_tile_F(tile_x, tile_y, 10);
+            break;
+
+        case TILE_G:
+            draw_tile_G(tile_x, tile_y, 10);
             break;
 
         default:
@@ -162,11 +187,186 @@ void draw_tile_G(int x, int y, int tileSize){  //black hole?
     rectangle_driver(x+3, y+3, 4, 4, 0xFF);
 }
 
+/*draw one sun per time*/
+void draw_sun(int x, int y){
+    rectangle_driver(x, y, 12, 12, 0xE0);
+    rectangle_driver(x+3, y+3, 7, 1, 0xF0);
+    rectangle_driver(x+3, y+5, 5, 1, 0xF0);
+    rectangle_driver(x+3, y+9, 7, 1, 0xF0);
+    rectangle_driver(x+6, y+7, 2, 1, 0xF0);
+    rectangle_driver(x+3, y+6, 1, 3, 0xF0);
+    rectangle_driver(x+7, y+6, 1, 1, 0xF0);
+    rectangle_driver(x+9, y+4, 1, 5, 0xF0);
+    for(int i = 0; i < 5; i++){
+        rectangle_driver(x-2+i*3, y-3, 2, 2, 0xE0);
+        rectangle_driver(x-1+i*3, y-2, 1, 1, 0xF0);
+    }
+    for(int i = 0; i < 5; i++){
+        rectangle_driver(x+i*3, y+13, 2, 2, 0xE0);
+        rectangle_driver(x+1+i*3, y+14, 1, 1, 0xF0);
+    }
+    for(int i = 0; i < 4; i++){
+        rectangle_driver(x-3, y+1+i*3, 2, 2, 0xE0);
+        rectangle_driver(x-2, y+2+i*3, 1, 1, 0xF0);
+    }
+    for(int i = 0; i < 4; i++){
+        rectangle_driver(x+13, y+i*3, 2, 2, 0xE0);
+        rectangle_driver(x+14, y+1+i*3, 1, 1, 0xF0);
+    }
+}
+
+/*draw one cloud per time*/
+void draw_daytime_cloud(int x, int y){
+    rectangle_driver(x, y, 5, 1, 0xFF);
+    rectangle_driver(x-1, y+1, 8, 2, 0xFF);
+    rectangle_driver(x-4, y+3, 14, 4, 0xFF);
+    rectangle_driver(x-7, y+7, 19, 2, 0xFF);
+    rectangle_driver(x-9, y+9, 23, 6, 0xFF);
+    rectangle_driver(x-6, y+15, 15, 1, 0xFF);
+    rectangle_driver(x-4, y+12, 1, 2, 0x17);
+    rectangle_driver(x+8, y+12, 1, 2, 0x17);
+    rectangle_driver(x-2, y+14, 9, 1, 0x17);
+}
+
+/*draw one tree per time*/
+void draw_daytime_tree(int x, int y){
+    rectangle_driver(x, y, 4, 4, 0x55);
+    rectangle_driver(x-2, y+4, 8, 4, 0x55);
+    rectangle_driver(x-4, y+8, 12, 4, 0x55);
+    rectangle_driver(x-6, y+12, 16, 4, 0x55);
+    rectangle_driver(x-8, y+16, 20, 4, 0x55);
+    rectangle_driver(x-6, y+20, 16, 3, 0x55);
+    rectangle_driver(x, y+16, 4, 11, 0x69);
+}
+
+/*draw daytime background*/
+void draw_daytime_bg(){
+    rectangle_driver(0, 0, 320, 210, 0x9B); //draw blue bg
+    rectangle_driver(0, 210, 320, 30, 0x80); //draw ground
+    draw_sun(10,15);
+    draw_daytime_cloud(15,50);
+    draw_daytime_cloud(85,35);
+    draw_daytime_cloud(115,40);
+    draw_daytime_cloud(145,30);
+    draw_daytime_cloud(175,20);
+    draw_daytime_cloud(225,10);
+    draw_daytime_cloud(255,25);
+    draw_daytime_cloud(277,25);
+    draw_daytime_cloud(290,35);
+    draw_daytime_tree(30,210-27);
+    draw_daytime_tree(80,210-27);
+    draw_daytime_tree(100,210-27);
+    draw_daytime_tree(120,210-27);
+    draw_daytime_tree(150,210-27);
+    draw_daytime_tree(180,210-27);
+    draw_daytime_tree(220,210-27);
+    draw_daytime_tree(250,210-27);
+    draw_daytime_tree(270,210-27);
+    draw_daytime_tree(295,210-27);
+}
+
+/*draw one moon per time*/
+void draw_moon(int x, int y){
+    rectangle_driver(x, y, 12, 12, 0xFE);
+    rectangle_driver(x+3, y+3, 7, 1, 0xF9);
+    rectangle_driver(x+3, y+5, 5, 1, 0xF9);
+    rectangle_driver(x+3, y+9, 7, 1, 0xF9);
+    rectangle_driver(x+6, y+7, 2, 1, 0xF9);
+    rectangle_driver(x+3, y+6, 1, 3, 0xF9);
+    rectangle_driver(x+7, y+6, 1, 1, 0xF9);
+    rectangle_driver(x+9, y+4, 1, 5, 0xF9);
+}
+
+/*draw one star per time*/
+void draw_star(int x, int y){
+    rectangle_driver(x, y, 1, 1, 0xF9);
+    rectangle_driver(x-1, y+1, 3, 2, 0xF9);
+    rectangle_driver(x-5, y+3, 11, 1, 0xF9);
+    rectangle_driver(x-4, y+4, 9, 1, 0xF9);
+    rectangle_driver(x-2, y+5, 5, 2, 0xF9);
+    rectangle_driver(x-3, y+7, 7, 1, 0xF9);
+    rectangle_driver(x-4, y+8, 3, 1, 0xF9);
+    rectangle_driver(x+2, y+8, 3, 1, 0xF9);
+    //eyes and mouth
+    rectangle_driver(x-2, y+4, 1, 1, 0xFF);
+    rectangle_driver(x+1, y+4, 1, 1, 0xFF);
+    rectangle_driver(x-1, y+4, 1, 1, 0x00);
+    rectangle_driver(x+2, y+4, 1, 1, 0x00);
+    rectangle_driver(x-1, y+6, 3, 1, 0x00);
+    
+}
+
+/*draw one cloud per time*/
+void draw_night_cloud(int x, int y){
+    rectangle_driver(x, y, 5, 1, 0x4D);
+    rectangle_driver(x-1, y+1, 8, 2, 0x4D);
+    rectangle_driver(x-4, y+3, 14, 4, 0x4D);
+    rectangle_driver(x-7, y+7, 19, 2, 0x4D);
+    rectangle_driver(x-9, y+9, 23, 6, 0x4D);
+    rectangle_driver(x-6, y+15, 15, 1, 0x4D);
+    rectangle_driver(x-4, y+12, 1, 2, 0xFF);
+    rectangle_driver(x+8, y+12, 1, 2, 0xFF);
+    rectangle_driver(x-2, y+14, 9, 1, 0xFF);
+}
+
+/*draw one tree per time*/
+void draw_night_tree(int x, int y){
+    rectangle_driver(x, y, 4, 4, 0x12);
+    rectangle_driver(x-2, y+4, 8, 4, 0x12);
+    rectangle_driver(x-4, y+8, 12, 4, 0x12);
+    rectangle_driver(x-6, y+12, 16, 4, 0x12);
+    rectangle_driver(x-8, y+16, 20, 4, 0x12);
+    rectangle_driver(x-6, y+20, 16, 3, 0x12);
+    rectangle_driver(x, y+16, 4, 11, 0x91);
+}
+
+/*draw night background*/
+void draw_night_bg(){
+    rectangle_driver(0, 0, 320, 210, 0x29); //draw blue bg
+    rectangle_driver(0, 210, 320, 30, 0x6D); //draw ground
+    draw_moon(280,15);
+    draw_star(5,15);
+    draw_star(15,35);
+    draw_star(40,65);
+    draw_star(70,45);
+    draw_star(85,50);
+    draw_star(90,10);
+    draw_star(130,5);
+    draw_star(150,15);
+    draw_star(170,45);
+    draw_star(240,26);
+    draw_star(255,13);
+    draw_star(270,36);
+    draw_star(300,48);
+    draw_night_cloud(15,50);
+    draw_night_cloud(35,20);
+    draw_night_cloud(55,10);
+    draw_night_cloud(85,35);
+    draw_night_cloud(115,40);
+    draw_night_cloud(145,30);
+    draw_night_cloud(175,20);
+    draw_night_cloud(225,10);
+    draw_night_cloud(255,25);
+    draw_night_cloud(277,25);
+    draw_night_cloud(290,35);
+    draw_night_tree(20,210-27);
+    draw_night_tree(50,210-27);
+    draw_night_tree(70,210-27);
+    draw_night_tree(100,210-27);
+    draw_night_tree(150,210-27);
+    draw_night_tree(180,210-27);
+    draw_night_tree(220,210-27);
+    draw_night_tree(250,210-27);
+    draw_night_tree(270,210-27);
+    draw_night_tree(295,210-27);
+}
+
 //Main for testing purposes
 int main(void)
 {
     clear_display();
     // sample mains
+    draw_night_bg();
     int coords[18][3] = {
         {10, 190, -1},
         {300, 30, -2},
@@ -178,11 +378,11 @@ int main(void)
         {10, 200, 2},
         {20, 200, 2},
         {50,160,1},
-        {60,160,1},
+        {60,160,7},
         {70,160,1},
         {100,100,3},
         {100,110,3},
-        {100,120,3},
+        {100,120,6},
         {200,100,4},
         {210,90,4},
         {220,80,4}
