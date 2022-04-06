@@ -32,16 +32,21 @@ gravity = 0.5
 reg_blk_count = 10
 ice_blk_count = 9
 tramp_blk_count = 8
+grav_blk_count = 3
 
 levels = bitmaps.levels #stores bitmaps for levels
+avail_blocks = bitmaps.avail_blocks
+spawn_rates = bitmaps.spawn_rates
 
-avail_blocks = {} #store counts in hashmap
-if (reg_blk_count):
-    avail_blocks[1] = reg_blk_count
-if (ice_blk_count):
-    avail_blocks[3] = ice_blk_count
-if (tramp_blk_count):
-    avail_blocks[4] = tramp_blk_count
+# avail_blocks = {} #store counts in hashmap
+# if (reg_blk_count):
+#     avail_blocks[1] = reg_blk_count
+# if (ice_blk_count):
+#     avail_blocks[3] = ice_blk_count
+# if (tramp_blk_count):
+#     avail_blocks[4] = tramp_blk_count
+# if grav_blk_count:
+#     avail_blocks[6] = grav_blk_count
 
 #infinite level settings
 screen_shift_default = 1
@@ -156,7 +161,7 @@ def create_tile_list(self, data, size_x, size_y):
         return tile_list
 
 def create_status_bar(self, data, size_x, size_y):
-    block_offset = screen_width // len(avail_blocks)
+    block_offset = screen_width // len(avail_blocks[1])
     offset = 0
     tile_list = []
     for key in data:
@@ -170,6 +175,8 @@ def create_status_bar(self, data, size_x, size_y):
             img = pygame.transform.scale(self.trampoline_square, (size_x, size_y))
         elif key == 5:
             img = pygame.transform.scale(self.finish_square, (size_x, size_y))
+        elif key == 6:
+            img = pygame.transform.scale(self.gravity_square, (size_x, size_y))
         img_rect = img.get_rect()
         # space out blocks horizontally
         img_rect.centerx = block_offset * offset + block_offset // 2
@@ -243,7 +250,7 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.enemy_spawn_rate = 0 #changeable
+        self.enemy_spawn_rate = spawn_rates[level] #changeable
 
         if (level == INFINITE):
             self.camera = InfiniteCamera()
@@ -258,9 +265,9 @@ class World():
         self.finish_square = pygame.image.load('images/finish.png')
         self.status_border = pygame.image.load('images/status-border.png')
         self.gravity_square = pygame.image.load('images/gravity_block.png')
-        self.default_tile_list = create_tile_list(self, data, tile_size, tile_size) + create_status_bar(self, avail_blocks, status_tile_size, status_tile_size)
-        self.default_avail_blocks = avail_blocks.copy()
-        self.avail_blocks = avail_blocks.copy()
+        self.default_tile_list = create_tile_list(self, data, tile_size, tile_size) + create_status_bar(self, avail_blocks[level], status_tile_size, status_tile_size)
+        self.default_avail_blocks = avail_blocks[level].copy()
+        self.avail_blocks = avail_blocks[level].copy()
         self.tile_list = self.default_tile_list.copy()
 
     def update(self):
@@ -274,7 +281,7 @@ class World():
             enemy_group.add(Enemy(random_x, 0))
         # draw block counts
         offset = 0
-        block_offset = screen_width // len(avail_blocks)
+        block_offset = screen_width // len(avail_blocks[1])
         for key in self.avail_blocks:
             xcoord = block_offset * offset + block_offset // 2 + tile_size
             ycoord = game_height + 3 + bar_height
@@ -307,6 +314,12 @@ class World():
                 elif(playerTwo.block_type == 4): #trampoline square
                     img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
                     if (self.avail_blocks[playerTwo.block_type] == 0):
+                        empty = 1
+                    else:
+                        self.avail_blocks[playerTwo.block_type] -= 1
+                elif(playerTwo.block_type == 6): #grav block
+                    img = pygame.transform.scale(self.gravity_square, (tile_size, tile_size))
+                    if(self.avail_blocks[playerTwo.block_type] == 0):
                         empty = 1
                     else:
                         self.avail_blocks[playerTwo.block_type] -= 1
@@ -519,7 +532,9 @@ class Player():
             if key[pygame.K_2]:
                 self.block_type = 3    
             if key[pygame.K_3]:
-                self.block_type = 4         
+                self.block_type = 4
+            if key[pygame.K_4]:
+                self.block_type = 6         
             
             self.rect.x += change_x
             if self.rect.left <= world.camera.leftmost_x:
