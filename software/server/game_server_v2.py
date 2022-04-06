@@ -47,6 +47,9 @@ TILE_FINISH  = 5
 TILE_GRAV = 6
 TILE_BOMB = 7
 
+FONT_HEIGHT = 24
+FONT_WIDTH = 16
+
 # Dimension setting
 tile_size = 10
 status_tile_size = 10
@@ -71,25 +74,8 @@ levels = bitmaps.levels #stores bitmaps for levels
 
 screen = pygame.display.set_mode((screen_width, screen_height))
 
-# Level settings
-enemy_spawn_rate = 0 #percentage
-reg_blk_count = 10
-ice_blk_count = 9
-tramp_blk_count = 8
-bomb_block_count = 0
-gravity_block_count = 0
-
-avail_blocks = {} #store counts in hashmap
-if (reg_blk_count):
-    avail_blocks[TILE_REG] = reg_blk_count
-if (ice_blk_count):
-    avail_blocks[TILE_ICE] = ice_blk_count
-if (tramp_blk_count):
-    avail_blocks[TILE_TRAMP] = tramp_blk_count
-if (bomb_block_count):
-    avail_blocks[TILE_BOMB] = bomb_block_count
-if (gravity_block_count):
-    avail_blocks[TILE_GRAV] = gravity_block_count
+avail_blocks = bitmaps.avail_blocks
+spawn_rates = bitmaps.spawn_rates
 
 #infinite level settings
 screen_shift_default = 1
@@ -261,7 +247,7 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.enemy_spawn_rate = enemy_spawn_rate
+        self.enemy_spawn_rate = spawn_rates[level]
 
         if (level == INFINITE):
             self.camera = InfiniteCamera()
@@ -276,9 +262,9 @@ class World():
         self.finish_square = pygame.image.load('images/finish.png')
         self.status_border = pygame.image.load('images/status-border.png')
         self.gravity_square = pygame.image.load('images/gravity_block.png')
-        self.default_tile_list = create_tile_list(self, data, tile_size, tile_size) + create_status_bar(self, avail_blocks, status_tile_size, status_tile_size)
-        self.default_avail_blocks = avail_blocks.copy()
-        self.avail_blocks = avail_blocks.copy()
+        self.default_tile_list = create_tile_list(self, data, tile_size, tile_size) + create_status_bar(self, avail_blocks[level], status_tile_size, status_tile_size,level)
+        self.default_avail_blocks = avail_blocks[level].copy()
+        self.avail_blocks = avail_blocks[level].copy()
         self.tile_list = self.default_tile_list.copy()
 
         pygame.sprite.Group.empty(enemy_group)
@@ -303,25 +289,37 @@ class World():
         empty = 0
         if key_p2 == 'p': # place block
             if not playerTwo.in_block(): #makes sure you can't place blocks over each other. maybe not necessary?
-                if(playerTwo.block_type == TILE_REG):
-                    img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
-                    if (self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
-                elif(playerTwo.block_type == TILE_ICE):
-                    img = pygame.transform.scale(self.ice_square, (tile_size, tile_size))
-                    if (self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
-                elif(playerTwo.block_type == TILE_TRAMP):
-                    img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
-                    if (self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
-                
+                if playerTwo.block_type in self.avail_blocks:
+                    if(playerTwo.block_type == TILE_REG):
+                        img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
+                        if (self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            if self.level != INFINITE:
+                                self.avail_blocks[playerTwo.block_type] -= 1
+                    elif(playerTwo.block_type == TILE_ICE):
+                        img = pygame.transform.scale(self.ice_square, (tile_size, tile_size))
+                        if (self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            if self.level != INFINITE:
+                                self.avail_blocks[playerTwo.block_type] -= 1
+                    elif(playerTwo.block_type == TILE_TRAMP):
+                        img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
+                        if (self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            if self.level != INFINITE:
+                                self.avail_blocks[playerTwo.block_type] -= 1
+                    elif(playerTwo.block_type == TILE_GRAV): #grav block
+                        img = pygame.transform.scale(self.gravity_square, (tile_size, tile_size))
+                        if(self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            if self.level != INFINITE:
+                                self.avail_blocks[playerTwo.block_type] -= 1
+                else:
+                    empty = 1
                 #only place blocks if there are any left
                 if not empty:
                     img_rect = img.get_rect()
@@ -427,6 +425,8 @@ class Player():
                     self.vel_x = max(self.vel_x - 1, -reg_change_x) #max ice speed
                     change_x -= ice_max_change_x
                 else:
+                    if not onBlock:
+                        self.vel_x = 0
                     change_x -= ice_change_x 
 
             elif key == 'd':
@@ -434,6 +434,8 @@ class Player():
                     self.vel_x = min(self.vel_x + 1, reg_change_x) #max ice speed
                     change_x += ice_max_change_x
                 else:
+                    if not onBlock:
+                        self.vel_x = 0
                     change_x += ice_change_x 
 
             if onBlock and not onIce:
@@ -505,11 +507,13 @@ class Player():
             elif key == 'd':
                 change_x += tile_size
             elif key == '1':
-                self.block_type = 1
+                self.block_type = TILE_REG
             elif key == '2':
-                self.block_type = 3    
+                self.block_type = TILE_ICE   
             elif key == '3':
-                self.block_type = 4         
+                self.block_type = TILE_TRAMP 
+            elif key == '4':
+                self.block_type = TILE_GRAV       
             
             self.rect.x += change_x
             if self.rect.left <= world.camera.leftmost_x:
@@ -582,8 +586,8 @@ def create_tile_list(self, data, size_x, size_y):
                     tile_list.append(tile)
         return tile_list
 
-def create_status_bar(self, data, size_x, size_y):
-    block_offset = screen_width // len(avail_blocks)
+def create_status_bar(self, data, size_x, size_y, level):
+    block_offset = screen_width // len(data)
     offset = 0
     tile_list = []
     for key in data:
@@ -597,10 +601,14 @@ def create_status_bar(self, data, size_x, size_y):
             img = pygame.transform.scale(self.trampoline_square, (size_x, size_y))
         elif key == TILE_FINISH:
             img = pygame.transform.scale(self.finish_square, (size_x, size_y))
+        elif key == TILE_GRAV:
+            img = pygame.transform.scale(self.gravity_square, (size_x, size_y))
         img_rect = img.get_rect()
         # space out blocks horizontally
-        # img_rect.x = size_x * (offset * 4 + 2)
-        img_rect.centerx = block_offset * offset + block_offset // 2
+        if level == INFINITE:
+            img_rect.centerx = block_offset * offset + block_offset // 2
+        else: # don't need any characters for infinite level
+            img_rect.centerx = block_offset * offset + block_offset // 2 - FONT_WIDTH
         # center the blocks vertically
         img_rect.centery = game_height + (screen_height - game_height) // 2 + bar_height 
         block = (img, img_rect, key)
@@ -643,6 +651,10 @@ def run_game():
         if player_two_inputs:
             input_p2 = player_two_inputs[0]
             player_two_inputs.popleft() #delete the latest action
+
+        if input_p1 == '0' or input_p2 == '0': # return to level select (quit level)
+            changed = True
+            menu.current_menu_screen = LEVEL_SELECT
 
         if menu.current_menu_screen != GAMEPLAY:
             menu.update(input_p1, input_p2)
@@ -732,10 +744,12 @@ def sender ():
                     str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2] + MENUOFFSET},"
                 str_tilelist += "&"
             else: # game in progress
-                str_tilelist += '!,' 
-                for key in world.avail_blocks:
-                    str_tilelist += f"{world.avail_blocks[key]},"
-                str_tilelist += '!,' 
+                if world.level != INFINITE: # infinite level has unlimited blocks
+                    str_tilelist += '!,' 
+                    for key in world.avail_blocks:
+                        str_tilelist += f"{world.avail_blocks[key]},"
+                    str_tilelist += '!,' 
+
                 str_tilelist += f"{playerOne.adjusted_rect.x},{playerOne.adjusted_rect.y},{PLAYER1},"
                 str_tilelist += f"{playerTwo.adjusted_rect.x},{playerTwo.adjusted_rect.y},{PLAYER2},"
                 

@@ -113,6 +113,9 @@ def run_game():
             elif key[pygame.K_3]:
                 print('3')
                 s1.send('3'.encode())
+            elif key[pygame.K_4]:
+                print('4')
+                s1.send('4'.encode())
             elif key[pygame.K_SPACE]:
                 print('p')
                 s1.send('p'.encode())

@@ -129,28 +129,26 @@ level_1_dict = {
     1: 10, #amount of normal blocks
     3: 4,  #amount of ice blocks
     4: 5,  #amount of trampoline blocks
-    6: 0   #amount of gravity blocks
 }
 
 level_2_dict = {
     1: 10, #amount of normal blocks
     3: 4,  #amount of ice blocks
     4: 5,  #amount of trampoline blocks
-    6: 0   #amount of gravity blocks
 }
 
 level_3_dict = {
     1: 10, #amount of normal blocks
     3: 4,  #amount of ice blocks
     4: 5,  #amount of trampoline blocks
-    6: 0   #amount of gravity blocks
+    6: 3   #amount of gravity blocks
 }
 
 level_4_dict = {
     1: 10, #amount of normal blocks
     3: 4,  #amount of ice blocks
     4: 5,  #amount of trampoline blocks
-    6: 0   #amount of gravity blocks
+    6: 2   #amount of gravity blocks
 }
 
 level_5_dict = {
@@ -176,6 +174,7 @@ level_2_spawn_rate = 0
 level_3_spawn_rate = 0
 level_4_spawn_rate = 0
 level_5_spawn_rate = 0
+level_infinite_spawn_rate = 0
 
 spawn_rates = []
 
@@ -185,4 +184,4 @@ spawn_rates.append(level_2_spawn_rate)
 spawn_rates.append(level_3_spawn_rate)
 spawn_rates.append(level_4_spawn_rate)
 spawn_rates.append(level_5_spawn_rate)
-
+spawn_rates.append(level_infinite_spawn_rate)

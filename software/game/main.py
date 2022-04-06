@@ -161,7 +161,7 @@ def create_tile_list(self, data, size_x, size_y):
         return tile_list
 
 def create_status_bar(self, data, size_x, size_y):
-    block_offset = screen_width // len(avail_blocks[1])
+    block_offset = screen_width // len(data)
     offset = 0
     tile_list = []
     for key in data:
@@ -281,7 +281,7 @@ class World():
             enemy_group.add(Enemy(random_x, 0))
         # draw block counts
         offset = 0
-        block_offset = screen_width // len(avail_blocks[1])
+        block_offset = screen_width // len(world.avail_blocks)
         for key in self.avail_blocks:
             xcoord = block_offset * offset + block_offset // 2 + tile_size
             ycoord = game_height + 3 + bar_height
@@ -299,30 +299,34 @@ class World():
         empty = 0
         if key[pygame.K_SPACE]: # place block
             if not playerTwo.in_block(): #makes sure you can't place blocks over each other. maybe not necessary?
-                if(playerTwo.block_type == 1): #normal square
-                    img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
-                    if (self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
-                elif(playerTwo.block_type == 3): #ice square
-                    img = pygame.transform.scale(self.ice_square, (tile_size, tile_size))
-                    if (self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
-                elif(playerTwo.block_type == 4): #trampoline square
-                    img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
-                    if (self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
-                elif(playerTwo.block_type == 6): #grav block
-                    img = pygame.transform.scale(self.gravity_square, (tile_size, tile_size))
-                    if(self.avail_blocks[playerTwo.block_type] == 0):
-                        empty = 1
-                    else:
-                        self.avail_blocks[playerTwo.block_type] -= 1
+                if playerTwo.block_type in self.avail_blocks:
+                    if(playerTwo.block_type == 1): #normal square
+                        img = pygame.transform.scale(self.yellow_square, (tile_size, tile_size))
+                        print(self.avail_blocks)
+                        if (self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            self.avail_blocks[playerTwo.block_type] -= 1
+                    elif(playerTwo.block_type == 3): #ice square
+                        img = pygame.transform.scale(self.ice_square, (tile_size, tile_size))
+                        if (self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            self.avail_blocks[playerTwo.block_type] -= 1
+                    elif(playerTwo.block_type == 4): #trampoline square
+                        img = pygame.transform.scale(self.trampoline_square, (tile_size, tile_size))
+                        if (self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            self.avail_blocks[playerTwo.block_type] -= 1
+                    elif(playerTwo.block_type == 6): #grav block
+                        img = pygame.transform.scale(self.gravity_square, (tile_size, tile_size))
+                        if(self.avail_blocks[playerTwo.block_type] == 0):
+                            empty = 1
+                        else:
+                            self.avail_blocks[playerTwo.block_type] -= 1
+                else:
+                    empty = 1
                 
                 #only place blocks if there are any left
                 if not empty:

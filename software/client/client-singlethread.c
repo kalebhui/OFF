@@ -48,7 +48,7 @@
 #define MENUSIZE 5
 #define SCREENWIDTH 320
 #define SCREENHEIGHT 240
-#define MAXBLOCKS 3
+#define MAXBLOCKS 10
 #define GAMEHEIGHT 207
 #define CHARTOINT 87
 #define MAXDIGITS 10
@@ -293,13 +293,14 @@ void draw_status_text(int num[], int length, char colour) {
             num_digits++;
             num[i] /= 10;
         }
+        // places digits besides blocks and spread out status bar
         if (num_digits == 0) { // if there are no more blocks display zero
-            char_bp_driver(block_offset * i + block_offset / 2 + TILESIZE, GAMEHEIGHT + 3 + STATUSBARHEIGHT, 0, colour);
+            char_bp_driver(block_offset * i + block_offset / 2 + TILESIZE - char_width, GAMEHEIGHT + 3 + STATUSBARHEIGHT, 0, colour);
         }
         else {
             int count = 0;
             for (int j = num_digits - 1; j >= 0; j--) {
-                char_bp_driver(block_offset * i + block_offset / 2 + char_width * count + TILESIZE, 
+                char_bp_driver(block_offset * i + block_offset / 2 + char_width * count + TILESIZE - char_width, 
                                 GAMEHEIGHT + 3 + STATUSBARHEIGHT, reverse[j], colour);
                 count++;
             }
