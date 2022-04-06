@@ -211,7 +211,7 @@ void draw_tile_G(int x, int y, int tileSize){  //black hole?
 int main(void)
 {
     clear_display();
-    draw_tile_G(0, 0, TILESIZE);
+    draw_complete_screen(123412, 5);
 
     return 0;
 }
@@ -254,17 +254,31 @@ void draw_string(int x1, int y1, char * string, char colour) {
 void draw_complete_screen(int time_finished, int blocks_placed) {
     clear_display();
     int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
+    int time_finished_int = time_finished;
     
     char message[] = "level completed";
 
-    int message_length_timer = 6;
+    int message_length_timer = 7; // time: .s
     int time_finished_copy = time_finished;
-    while (time_finished_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+    int decimals = 0;
+    int count = 0;
+    
+    // used too divide up numbers larger than 10 into individual digits
+    // also counts up to 3 decimal places
+    while (time_finished_copy > 0) { 
+        int result = 1;
+        if (count < 3) {
+            for (int i = 0; i < count; i++) {
+                result *= 10;
+            }
+            decimals += result * (time_finished_copy % 10);
+            count++;
+        }
         message_length_timer++;
         time_finished_copy /= 10;
     }
     char time[message_length_timer];
-    sprintf(time, "time: %d", time_finished);
+    sprintf(time, "time: %d.%d", time_finished / 1000, decimals);
     
     int message_length_blocks = 8;
     int blocks_placed_copy = blocks_placed;

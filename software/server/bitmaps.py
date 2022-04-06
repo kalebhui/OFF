@@ -66,6 +66,7 @@ level_1 = level_2 = level_3 = level_4 = level_5 = [
 
 levels = []
 
+levels.append(0) # random offset so bitmap levels matches level number
 levels.append(level_1)
 levels.append(level_2)
 levels.append(level_3)

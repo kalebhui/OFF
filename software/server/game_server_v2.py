@@ -32,6 +32,7 @@ PLAYER_SELECT = 0
 LEVEL_SELECT = 1
 GAMEPLAY = 2
 FINISHED = 3
+COMPLETE_MENU = 4
 MENUOFFSET = 100
 
 PLAYER1 = -1
@@ -70,6 +71,7 @@ levels = bitmaps.levels #stores bitmaps for levels
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 # Level settings
+enemy_spawn_rate = 0 #percentage
 reg_blk_count = 10
 ice_blk_count = 9
 tramp_blk_count = 8
@@ -102,6 +104,7 @@ class Menu():
         self.current_menu_screen = PLAYER_SELECT
         self.player_one_connect = False
         self.player_two_connect = False
+        self.post_mode = 0
 
     def update(self, key_p1, key_p2):
         global world #allows us to access the world variable in this function
@@ -120,26 +123,51 @@ class Menu():
                 self.convert_red_to_green_tiles(screen_width // 2, screen_height, screen_width // 2) #turns the red tiles to green so there is an indication that p2 has connected
                 self.player_two_connect = True
         elif self.current_menu_screen == LEVEL_SELECT:
+            playerOne.reset()
+            playerTwo.reset()
             if key_p1 == '1' or key_p2 == '1':
-                world = World(levels[0], 1) #intializes world with proper level
+                world = World(levels[1], 1) #intializes world with proper level, ndex 0 is garbage value
                 self.current_menu_screen = GAMEPLAY
                 changed = True
             elif key_p1 == '2' or key_p2 == '2':
-                world = World(levels[1], 2)
+                world = World(levels[2], 2)
                 self.current_menu_screen = GAMEPLAY
                 changed = True
             elif key_p1 == '3' or key_p2 == '3':
-                world = World(levels[2], 3)
+                world = World(levels[3], 3)
                 self.current_menu_screen = GAMEPLAY
                 changed = True
             elif key_p1 == '4' or key_p2 == '4':
-                world = World(levels[3], 4)
+                world = World(levels[4], 4)
                 self.current_menu_screen = GAMEPLAY
                 changed = True
             elif key_p1 == '5' or key_p2 == '5':
-                world = World(levels[4], 5)
+                world = World(levels[5], 5)
                 self.current_menu_screen = GAMEPLAY
                 changed = True
+        if self.current_menu_screen == COMPLETE_MENU:
+            if key_p1 == '1' or key_p2 == '1':
+                menu.post_mode = 1
+                pygame.time.delay(500)
+                world = World(levels[world.level], world.level) #recreate world with same bitmap
+                playerOne.reset() #respawn player one
+                playerTwo.reset() #respawn player two
+                self.current_menu_screen = GAMEPLAY
+                changed = True
+            elif key_p1 == '2' or key_p2 == '2':
+                menu.post_mode = 2
+                pygame.time.delay(500)
+                world = World(levels[world.level + 1], world.level + 1) #recreate world with next level bitmap
+                playerOne.reset() #respawn player one
+                playerTwo.reset() #respawn player two
+                self.current_menu_screen = GAMEPLAY
+                changed = True
+            elif key_p1 == '3' or key_p2 == '3':
+                menu.post_mode = 3
+                pygame.time.delay(500)
+                menu.current_menu_screen = LEVEL_SELECT
+                changed = True
+            menu.post_mode = 0
 
     def convert_red_to_green_tiles(self, x, y, size):
         if self.current_menu_screen == PLAYER_SELECT:
@@ -195,7 +223,7 @@ class World():
         self.blocks_placed = 0
         self.level = level
         self.camera = Camera(level, screen_width + 200)
-        self.enemy_spawn_rate = 0.01 # 10% per tick
+        self.enemy_spawn_rate = enemy_spawn_rate
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -218,9 +246,6 @@ class World():
         if random.random() < self.enemy_spawn_rate:
             random_x = random.randint(self.camera.leftmost_x + 3 * tile_size, self.camera.leftmost_x + screen_width - 3 * tile_size)
             enemy_group.add(Enemy(random_x, 0))
-        
-        # if len(pygame.sprite.Group.sprites(enemy_group)):
-        #     changed = True
         
         #check if p1 finished the level
         for tile in world.tile_list:
@@ -263,7 +288,8 @@ class World():
         if key_p1 == 'r' or key_p2 == 'r': # reset to default
             self.tile_list = self.default_tile_list.copy()
             self.avail_blocks = self.default_avail_blocks.copy()
-            changed = True #???
+            changed = True
+            pygame.sprite.Group.empty(enemy_group)
 
 
 class Player():
@@ -309,40 +335,42 @@ class Player():
             onBlock = False
             onIce = False
             onTrampoline = False
+            onGrav = False
 
             for tile in world.tile_list[:]:
                 if tile[1].colliderect(self.rect.x, self.rect.y + 1, self.width, self.height):
                     onBlock = True #p1 is standing on a block
-                    if tile[2] == 3:
+                    if tile[2] == TILE_ICE:
                         onIce = True #p1 is standing on ice
-                    elif tile[2] == 4:
+                    elif tile[2] == TILE_TRAMP:
                         onTrampoline = True
-                    elif tile[2] == 6:
-                        world.tile_list.remove(tile)
-                        self.gravity *= -1 #switch the gravity
-                        changed = True
-                elif tile[1].colliderect(self.rect.x, self.rect.y - 1, self.width, self.height):
-                    onBlock = True #so when gravity is reversed we can't spam s
-                    if tile[2] == 3:
-                        onIce = True
-                    elif tile[2] == 4:
-                        onTrampoline = True
-                    elif tile[2] == 6:
-                        world.tile_list.remove(tile)
+                    elif tile[2] == TILE_GRAV:
+                        onGrav = True
                         self.gravity *= -1 #switch the gravity
                         self.vel_y = 0
                         change_y = 0
+                elif tile[1].colliderect(self.rect.x, self.rect.y - 1, self.width, self.height):
+                    onBlock = True #so when gravity is reversed we can't spam s
+                    if tile[2] == TILE_ICE:
+                        onIce = True
+                    elif tile[2] == TILE_TRAMP:
+                        onTrampoline = True
+                    elif tile[2] == TILE_GRAV:
+                        onGrav = True
+                        self.gravity = gravity #switch the gravity
+                        self.vel_y = 0
+                        change_y = 0.5
 
             if key == 'w':
-                if onTrampoline:
+                if onTrampoline and not onGrav:
                     self.vel_y = -tramp_change_y
-                elif onBlock:
+                elif onBlock and not onGrav:
                     self.vel_y = -reg_change_y
 
             if key == 's':
-                if onTrampoline:
+                if onTrampoline and not onGrav:
                     self.vel_y = tramp_change_y
-                elif onBlock:
+                elif onBlock and not onGrav:
                     self.vel_y = reg_change_y
 
             elif key == 'a':
@@ -375,9 +403,14 @@ class Player():
             elif change_x < -reg_change_x:
                 change_x = -reg_change_x
 
+            # terminal velocity is reg_change_y, should not get higher before and after gravity flip
             self.vel_y += self.gravity
-            if self.vel_y > reg_change_y:
-                self.vel_y = reg_change_y
+            if self.gravity >= 0:
+                if self.vel_y > reg_change_y:
+                    self.vel_y = reg_change_y
+            else:
+                if self.vel_y < -reg_change_y:
+                    self.vel_y = -reg_change_y
             change_y += self.vel_y
 
             #collision detection with the other blocks
@@ -546,11 +579,9 @@ def run_game():
         input_p2 = ''
         if player_one_inputs:
             input_p1 = player_one_inputs[0]
-            # player_change = True#!!!!
             player_one_inputs.popleft() #delete the latest action
         if player_two_inputs:
             input_p2 = player_two_inputs[0]
-            # player_change = True#!!!!
             player_two_inputs.popleft() #delete the latest action
 
         if menu.current_menu_screen != GAMEPLAY:
@@ -558,15 +589,13 @@ def run_game():
         elif world.level_completed:
             if world.level < 5:
                 menu.current_menu_screen = FINISHED
-                print(menu.current_menu_screen)
-                pygame.time.delay(3000) # wait for 3 seconds
-                world = World(levels[world.level + 1], world.level + 1) #recreate world with next level bitmap
-                menu.current_menu_screen = GAMEPLAY
-                changed = True
-                playerOne.reset() #respawn player one
-                playerTwo.reset() #respawn player two
-            else:
+                pygame.time.delay(3000)
+                menu.current_menu_screen = COMPLETE_MENU
+            else: # no levels left, return to level select
                 menu.current_menu_screen = FINISHED
+                pygame.time.delay(3000)
+                menu.current_menu_screen = LEVEL_SELECT
+                changed = True
         else:
             world.update(input_p1, input_p2)
             playerOne.update(input_p1)
@@ -579,7 +608,7 @@ def run_game():
 def receiver (conn, addr):
     playerNum = -1
     connected = True
-    while playerNum == -1 and connected: #!!!! right now two players can connect to 1 or 2
+    while playerNum == -1 and connected:
         try:
             message = conn.recv(1).decode(FORMAT)
             message = int(message)
@@ -620,8 +649,6 @@ def sender ():
     global clients_arr
     global player_change
     global changed
-    print("LENGTH OF CLIENT ARR: ")
-    print(len(clients_arr))
     connected = True
 
     while connected:
@@ -632,11 +659,11 @@ def sender ():
                 str_tilelist += '.,' 
                 changed = False
             if menu.current_menu_screen == FINISHED: # signal game is done
-                str_tilelist += f"?,{(world.finish_time) / 1000}, {world.blocks_placed},"
-                for client in clients_arr:
-                    client[0].send(str_tilelist.encode())
-                    client[0].recv(1).decode(FORMAT)
-            elif menu.current_menu_screen != GAMEPLAY:
+                str_tilelist += f"?,{world.finish_time}, {world.blocks_placed},"
+            elif menu.current_menu_screen == COMPLETE_MENU: # signal post complete menu
+                str_tilelist += f"/,{menu.post_mode},"
+            elif menu.current_menu_screen != GAMEPLAY: 
+                str_tilelist += '!,!,' # remove status bar text if it exists 
                 if menu.current_menu_screen == PLAYER_SELECT:
                     tile_list = menu.player_select_tile_list
                 elif menu.current_menu_screen == LEVEL_SELECT:
@@ -644,10 +671,7 @@ def sender ():
                 for tile in tile_list:
                     str_tilelist += f"{tile[1].x},{tile[1].y},{tile[2] + MENUOFFSET},"
                 str_tilelist += "&"
-                for client in clients_arr:
-                    client[0].send(str_tilelist.encode())
-                    client[0].recv(1).decode(FORMAT)
-            else:
+            else: # game in progress
                 str_tilelist += '!,' 
                 for key in world.avail_blocks:
                     str_tilelist += f"{world.avail_blocks[key]},"
@@ -664,9 +688,10 @@ def sender ():
                 for enemy in pygame.sprite.Group.sprites(enemy_group):
                     str_tilelist += f"{enemy.rect.x},{enemy.rect.y},{TILE_BOMB},"
                 str_tilelist += "&"
-                for client in clients_arr:
-                    client[0].send(str_tilelist.encode())
-                    client[0].recv(1).decode(FORMAT)
+
+            for client in clients_arr:
+                client[0].send(str_tilelist.encode())
+                client[0].recv(1).decode(FORMAT)
         except socket.error:
             connected = False
             for client in clients_arr:
@@ -684,10 +709,6 @@ def handle_client(conn, addr):
         thread.start()
     elif message == 0:
         clients_arr.append((conn, addr))
-        print("IN HANDLE_CLIENT: ")
-        print(conn)
-        print(addr)
-        # sender(conn, addr)
     else:
         print("ERROR")
 
@@ -706,7 +727,6 @@ def run_server():
         count += 1
 
     print("[MAX THREADS CONNECTED]")
-    print(clients_arr)
     thread = threading.Thread(target=sender, args=())
     thread.start()
     run_game()

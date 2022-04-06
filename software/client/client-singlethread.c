@@ -90,6 +90,7 @@ int convert_char(char);
 void draw_string(int, int, char *, char);
 void draw_string_center_x(int, char *, char);
 void draw_complete_screen(int, int);
+void draw_post_complete_screen(int);
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// Render Functions ////////////////////////////////
@@ -309,17 +310,31 @@ void draw_status_text(int num[], int length, char colour) {
 void draw_complete_screen(int time_finished, int blocks_placed) {
     clear_display();
     int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
+    int time_finished_int = time_finished;
     
     char message[] = "level completed";
 
-    int message_length_timer = 6;
+    int message_length_timer = 7; // time: .s
     int time_finished_copy = time_finished;
-    while (time_finished_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+    int decimals = 0;
+    int count = 0;
+    
+    // used too divide up numbers larger than 10 into individual digits
+    // also counts up to 3 decimal places
+    while (time_finished_copy > 0) { 
+        int result = 1;
+        if (count < 3) {
+            for (int i = 0; i < count; i++) {
+                result *= 10;
+            }
+            decimals += result * (time_finished_copy % 10);
+            count++;
+        }
         message_length_timer++;
         time_finished_copy /= 10;
     }
     char time[message_length_timer];
-    sprintf(time, "time: %d", time_finished);
+    sprintf(time, "time: %d.%d", time_finished / 1000, decimals);
     
     int message_length_blocks = 8;
     int blocks_placed_copy = blocks_placed;
@@ -334,6 +349,34 @@ void draw_complete_screen(int time_finished, int blocks_placed) {
     draw_string_center_x(y + CHARHEIGHT, time, 0xFF);
     draw_string_center_x(y + CHARHEIGHT * 2, blocks, 0xFF);
 
+}
+
+void draw_post_complete_screen(int mode) {
+
+    int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
+
+    clear_display();
+
+    char message1[] = "1: retry";
+    char message2[] = "2: next level";
+    char message3[] = "3: level select";
+
+    char colour1 = 0xFF;
+    char colour2 = 0xFF;
+    char colour3 = 0xFF;
+    if (mode == 1) {
+        colour1 = 0x38;
+    }
+    else if (mode == 2) {
+        colour2 = 0x38;
+    }
+    else if (mode == 3) {
+        colour3 = 0x38;
+    }
+
+    draw_string_center_x(y, message1, colour1);
+    draw_string_center_x(y + CHARHEIGHT, message2, colour2);
+    draw_string_center_x(y + CHARHEIGHT * 2, message3, colour3);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -748,6 +791,8 @@ void *game_handler(void *arg) {
     int complete = 0;
     int timeFinish = 0;
     int blocksPlaced = 0;
+    int mode = -1;
+    int prevMode;
 
     while (1) {
         coords_row = 0;
@@ -771,7 +816,7 @@ void *game_handler(void *arg) {
         // int changed = strcmp(prev_buffer, buffer); 
         char * token = strtok(buffer, ",");
         
-        if (*token == '?') {
+        if (*token == '?') { // complete screen signal
             if (!complete) {
                 for (int i = 0; i < 2; i++) {
                     token = strtok(NULL, ",");
@@ -786,10 +831,18 @@ void *game_handler(void *arg) {
                 complete = 1;
             }
         }
+        else if (*token == '/') { // post-complete screen
+            token = strtok(NULL, ",");
+            prevMode = mode;
+            mode = atoi(token);
+            if (prevMode != mode) {
+                draw_post_complete_screen(mode);
+            }
+        }
         else {
             while( token != NULL ) {
                 complete = 0;
-                if (*token == '.') {
+                if (*token == '.') { // clear screen signal
                     clear_signal = 1;
                 }
                 else if(*token == '&') { // '&' signals end of coordinates
