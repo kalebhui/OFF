@@ -184,7 +184,7 @@ class Camera():
     def __init__(self, level, level_width = None):
         self.leftmost_x = 0
         if level_width == None:
-            level_bitmap = levels[level]
+            level_bitmap = levels[level - 1] #0 indexing
             self.max_x = len(level_bitmap[0]) * tile_size
         else:
             self.max_x = level_width
@@ -211,8 +211,8 @@ class World():
         self.level_completed = False
         self.blocks_placed = 0
         self.level = level
-        self.camera = Camera(level, screen_width + 200)
-        self.enemy_spawn_rate = 0.1 #changeable
+        self.camera = Camera(level)
+        self.enemy_spawn_rate = 0 #changeable
 
         #load images
         self.yellow_square = pygame.image.load('images/yellow.png')
@@ -233,8 +233,6 @@ class World():
         if random.random() < self.enemy_spawn_rate:
             random_x = random.randint(self.camera.leftmost_x + tile_size, self.camera.leftmost_x + screen_width - tile_size)
             enemy_group.add(Enemy(random_x, 0))
-            a = pygame.sprite.Group.sprites(enemy_group)
-            print(a[0].rect)
         # draw block counts
         offset = 0
         block_offset = screen_width // len(avail_blocks)
@@ -325,6 +323,7 @@ class Player():
         self.vel_y = 0
         self.vel_x = 0
         self.block_type = 1
+        self.gravity = gravity
 
     def update(self):
 
@@ -339,6 +338,7 @@ class Player():
             onBlock = False
             onIce = False
             onTrampoline = False
+            onGrav = False
 
             for tile in world.tile_list[:]:
                 if tile[1].colliderect(self.rect.x, self.rect.y + 1, self.width, self.height):
@@ -348,8 +348,10 @@ class Player():
                     elif tile[2] == 4:
                         onTrampoline = True
                     elif tile[2] == 6:
-                        world.tile_list.remove(tile)
-                        self.gravity *= -1 #switch the gravity
+                        onGrav = True
+                        change_y = 0
+                        self.vel_y = 0
+                        self.gravity = -gravity #switch the gravity
                 elif tile[1].colliderect(self.rect.x, self.rect.y - 1, self.width, self.height):
                     onBlock = True #so when gravity is reversed we can't spam s
                     if tile[2] == 3:
@@ -357,24 +359,24 @@ class Player():
                     elif tile[2] == 4:
                         onTrampoline = True
                     elif tile[2] == 6:
-                        world.tile_list.remove(tile)
-                        self.gravity *= -1 #switch the gravity
+                        onGrav = True
+                        change_y = 0.5
                         self.vel_y = 0
-                        change_y = 0
+                        self.gravity = gravity #switch the gravity
                 
             # if keystroke is pressed check whether its right or left
             key = pygame.key.get_pressed()
 
             if key[pygame.K_w]:
-                if onTrampoline:
+                if onTrampoline and not onGrav:
                     self.vel_y = -tramp_change_y
-                elif onBlock:
+                elif onBlock and not onGrav:
                     self.vel_y = -reg_change_y
 
             if key[pygame.K_s]:
-                if onTrampoline:
+                if onTrampoline and not onGrav:
                     self.vel_y = tramp_change_y
-                elif onBlock:
+                elif onBlock and not onGrav:
                     self.vel_y = reg_change_y
 
             if key[pygame.K_a]:
@@ -408,8 +410,12 @@ class Player():
                 change_x = -reg_change_x
 
             self.vel_y += self.gravity
-            if self.vel_y > reg_change_y:
-                self.vel_y = reg_change_y
+            if self.gravity >= 0:
+                if self.vel_y > reg_change_y:
+                    self.vel_y = reg_change_y
+            else:
+                if self.vel_y < -reg_change_y:
+                    self.vel_y = -reg_change_y
             change_y += self.vel_y
 
             #collision detection with the other blocks
@@ -429,8 +435,9 @@ class Player():
                 self.rect.left = 0
             elif self.rect.right >= screen_width + world.camera.leftmost_x:
                 self.rect.right = screen_width + world.camera.leftmost_x
-
+                
             self.rect.y += change_y
+            
             if self.rect.top <= 0:
                 self.reset()
             elif self.rect.bottom >= game_height: #respawn when touch bottom of screen

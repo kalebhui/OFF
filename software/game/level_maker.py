@@ -5,7 +5,7 @@ import bitmaps
 
 pygame.init()
 clock = pygame.time.Clock()
-screen_width = 320
+screen_width = 650
 screen_height = 240
 tile_size = 10
 spawn_coords_p2 = (20 * tile_size, 5 * tile_size)
@@ -71,6 +71,24 @@ for row in range(screen_height // tile_size):
 	r = [0] * (screen_width // tile_size)
 	world_data.append(r)
 
+
+# used to print the world_data to be used for bitmap 
+# deletes any blank space at the end of the level
+def handle_world_data(width):
+    if width == 0:
+        return
+    empty = True
+    for row in world_data:
+        if row[width] != 0:
+            empty = False
+            break
+    if empty == False:
+        print(world_data)
+        print(width + 1)
+    else:
+        for row in world_data:
+            del row[width]
+        handle_world_data(width - 1)
 
 class World():
     def __init__(self, data):
@@ -169,7 +187,8 @@ class Player():
             else:
                 self.mode = "mouse"
         if key[pygame.K_RETURN]:
-            print(world_data)
+            handle_world_data((screen_width // tile_size) - 1)
+            return True
 
         if self.mode == "keyboard":
             self.rect.x += change_x
@@ -216,8 +235,9 @@ while open:
         if event.type == pygame.QUIT:
             open = False
 
-    blockPlacer.update(event_list)
     world.update(event_list)
+    if blockPlacer.update(event_list):
+        open = False
     # for pixel in pixel_map:
     #     screen.blit(pixel[0], pixel[1])
     #screen.blit(new_image, (0, 0))
