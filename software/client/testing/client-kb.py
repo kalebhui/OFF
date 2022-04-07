@@ -68,7 +68,7 @@ def run_game():
         message = s.recv(100000).decode()
         if message[0] != '?' and message[0] != '/': # game is over
             if message[0] == '.':
-                message = message[2:]
+                message = message[3:]
             
             message = message.split(',')
 

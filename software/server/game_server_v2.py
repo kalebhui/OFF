@@ -730,6 +730,13 @@ def sender ():
             if changed: #signal to clear the display
                 str_tilelist += '.,' 
                 changed = False
+                if menu.current_menu_screen == GAMEPLAY: #determine what the background is
+                    if world.level % 2 == 0: #even number levels are day themed
+                        str_tilelist += '2,'
+                    else: #odd number levels are night themed
+                        str_tilelist += '3,'
+                else:
+                    str_tilelist += '1,'
             if menu.current_menu_screen == FINISHED: # signal game is done
                 str_tilelist += f"?,{world.finish_time}, {world.blocks_placed},"
             elif menu.current_menu_screen == COMPLETE_MENU: # signal post complete menu
