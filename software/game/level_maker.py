@@ -1,3 +1,7 @@
+# This program provides a UI to create levels and stores created levels as a bitmap
+# which can be used in bitmaps.py
+# @author Kaleb Hui, Luka Rogic, Sam Gu, Ting Xu
+
 from math import ceil
 from turtle import color
 import pygame

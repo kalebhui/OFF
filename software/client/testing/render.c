@@ -1,3 +1,13 @@
+/**
+ * @file render.c
+ * @author Kaleb Hui, Luka Rogic, Sam Gu, Ting Xu
+ * @brief used to test render functions on vga display. File built to run on DE1-SoC HPS.
+ * @date 2022-04-07
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

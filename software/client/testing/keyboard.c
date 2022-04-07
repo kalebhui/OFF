@@ -1,3 +1,13 @@
+/**
+ * @file keyboard.c
+ * @author Kaleb Hui, Luka Rogic, Sam Gu, Ting Xu
+ * @brief usb keyboard driver for DE1-SoC HPS.
+ * @date 2022-04-07
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

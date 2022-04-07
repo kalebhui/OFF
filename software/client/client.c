@@ -1,3 +1,13 @@
+/**
+ * @file client.c
+ * @author Kaleb Hui, Luka Rogic, Sam Gu, Ting Xu
+ * @brief Serves as the client to render game state on vga display. File built to run on DE1-SoC HPS.
+ * @date 2022-04-07
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -19,29 +29,32 @@
 #include <sys/mman.h>
 #include "address_map_arm.h"
 
+// used to connect to keyboard event on usb
 #define KBD_EVENT "/dev/input/event0"
 
-// define port we are connecting to
-#define PORT 3389
+
 
 // Use eth0 gateway address
 #define ipaddress "35.212.170.255"
-#define buffer_size 7000
-#define bitmap_width 40
-#define bitmap_height 24
+// define port we are connecting to
+#define PORT 3389
 
-//player and tile type define
+// message size from server
+#define buffer_size 7000
+
+//player and tile type definitions
 #define PLAYER1 -1
 #define PLAYER2 -2
 #define STATUSBAR 0
-#define TILE_A  1
-#define TILE_B  2
-#define TILE_C  3
-#define TILE_D  4
-#define TILE_E  5
-#define TILE_F  7
-#define TILE_G  6
+#define TILE_REG  1
+#define TILE_RED  2
+#define TILE_ICE  3
+#define TILE_TRAMP  4
+#define TILE_FINISH  5
+#define TILE_GRAV  6
+#define TILE_TNT  7
 
+//game constants 
 #define STATUSBARHEIGHT 3
 #define TILESIZE 10
 #define MENUOFFSET 100
@@ -66,13 +79,13 @@ int half_player_driver(int, int, int);  //x, y, player_num
 
 // tile drawing functions
 void draw_status_bar(int, int);
-void draw_tile_A(int, int, int);
-void draw_tile_B(int, int, int);
-void draw_tile_C(int, int, int);
-void draw_tile_D(int, int, int);
-void draw_tile_E(int, int, int);
-void draw_tile_F(int, int, int);
-void draw_tile_G(int, int, int);
+void draw_tile_reg(int, int, int);
+void draw_tile_red(int, int, int);
+void draw_tile_ice(int, int, int);
+void draw_tile_tramp(int, int, int);
+void draw_tile_finish(int, int, int);
+void draw_tile_tnt(int, int, int);
+void draw_tile_grav(int, int, int);
 
 // keyboard functions
 char get_keyvalue(int kbd_ptr);
@@ -121,11 +134,13 @@ void draw_background(int mode) {
     }
 }
 
+// draws black square over screen
 void clear_display() {
     player_driver(320, 240, 320, 240);
     rectangle_driver(0,0,320,240,0x0);
 }
 
+// renders tiles sent from server
 void renderTiles(int tile_arr[][3], int arr_len){
     int tile_type;
     int tile_x;
@@ -150,52 +165,52 @@ void renderTiles(int tile_arr[][3], int arr_len){
             draw_status_bar(tile_x, tile_y);
             break;
 
-        case TILE_A:
-            draw_tile_A(tile_x, tile_y, TILESIZE);
+        case TILE_REG:
+            draw_tile_reg(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_B:
-            draw_tile_B(tile_x, tile_y, TILESIZE);
+        case TILE_RED:
+            draw_tile_red(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_C:
-            draw_tile_C(tile_x, tile_y, TILESIZE);
+        case TILE_ICE:
+            draw_tile_ice(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_D:
-            draw_tile_D(tile_x, tile_y, TILESIZE);
+        case TILE_TRAMP:
+            draw_tile_tramp(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_E:
-            draw_tile_E(tile_x, tile_y, TILESIZE);
+        case TILE_FINISH:
+            draw_tile_finish(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_F:
-            draw_tile_F(tile_x, tile_y, TILESIZE);
+        case TILE_TNT:
+            draw_tile_tnt(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_G:
-            draw_tile_G(tile_x, tile_y, TILESIZE);
+        case TILE_GRAV:
+            draw_tile_grav(tile_x, tile_y, TILESIZE);
             break;
 
-        case TILE_A + MENUOFFSET:
-            draw_tile_A(tile_x, tile_y, MENUSIZE);
+        case TILE_REG + MENUOFFSET:
+            draw_tile_reg(tile_x, tile_y, MENUSIZE);
             break;
 
-        case TILE_B + MENUOFFSET:
-            draw_tile_B(tile_x, tile_y, MENUSIZE);
+        case TILE_RED + MENUOFFSET:
+            draw_tile_red(tile_x, tile_y, MENUSIZE);
             break;
 
-        case TILE_C + MENUOFFSET:
-            draw_tile_C(tile_x, tile_y, MENUSIZE);
+        case TILE_ICE + MENUOFFSET:
+            draw_tile_ice(tile_x, tile_y, MENUSIZE);
             break;
 
-        case TILE_D + MENUOFFSET:
-            draw_tile_D(tile_x, tile_y, MENUSIZE);
+        case TILE_TRAMP + MENUOFFSET:
+            draw_tile_tramp(tile_x, tile_y, MENUSIZE);
             break;
             
-        case TILE_E + MENUOFFSET:
-            draw_tile_E(tile_x, tile_y, MENUSIZE);
+        case TILE_FINISH + MENUOFFSET:
+            draw_tile_finish(tile_x, tile_y, MENUSIZE);
             break;
 
         default:
@@ -213,17 +228,17 @@ void draw_status_bar(int x, int y){
     rectangle_driver(x, y, SCREENWIDTH, STATUSBARHEIGHT, 0xFF);
 }
 
-void draw_tile_A(int x, int y, int tileSize){ //Normal
+void draw_tile_reg(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0xDD);
 }
 
-void draw_tile_B(int x, int y, int tileSize){ //Red
+void draw_tile_red(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0xE0);
 }
 
-void draw_tile_C(int x, int y, int tileSize){ //Ice
+void draw_tile_ice(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0x1F);
     rectangle_driver(x+4, y+0, 2, 2, 0xFF);
@@ -235,19 +250,19 @@ void draw_tile_C(int x, int y, int tileSize){ //Ice
     rectangle_driver(x+2, y+8, 2, 2, 0xFF);
 }
 
-void draw_tile_D(int x, int y, int tileSize){  //trap
+void draw_tile_tramp(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, 3, 0xE0);
     rectangle_driver(x, y+3, tileSize, tileSize-3, 0xDD);
     rectangle_driver(x, y, tileSize, 3, 0xE0);
 }
 
-void draw_tile_E(int x, int y, int tileSize){  //Finish
+void draw_tile_finish(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0x38);
 }
 
-void draw_tile_F(int x, int y, int tileSize){  //TNT
+void draw_tile_tnt(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0xE9);
     rectangle_driver(x+2, y+0, 6, tileSize, 0x85);
@@ -262,7 +277,7 @@ void draw_tile_F(int x, int y, int tileSize){  //TNT
     rectangle_driver(x+8, y+4, 1, 3, 0xFF); 
 }
 
-void draw_tile_G(int x, int y, int tileSize){  //black hole?
+void draw_tile_grav(int x, int y, int tileSize){
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, tileSize, 0x25);
     rectangle_driver(x+3, y+3, 4, 4, 0xFF);
@@ -446,12 +461,13 @@ void draw_night_bg(){
 //////////////////////////////// Message Code ////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
+// convert char to predefined int value
 int convert_char(char c) {
     int x = 0;
-    if (c >= 97 && c <= 122) {
+    if (c >= 97 && c <= 122) { // letters a - z lowercase
         x = c - CHARTOINT;
     }
-    else if (c >= 48 && c <= 57) {
+    else if (c >= 48 && c <= 57) { // numbers 0 - 9
         x = c - 48;
     }
     else if (c == '!') {
@@ -467,20 +483,23 @@ int convert_char(char c) {
     return x;
 }
 
+//draw string centered in screen at specified y value
 void draw_string_center_x(int y1, char * string, char colour) {
     int x = (SCREENWIDTH - strlen(string) * CHARWIDTH) / 2;
     draw_string(x, y1, string, colour);
 }
 
+//draw string at specified x and y value
 void draw_string(int x1, int y1, char * string, char colour) {
     int char_width = CHARWIDTH; //changeable for bigger spacing
     for(int i = 0; i < strlen(string); i++) {
-        if (string[i] != ' ') {
+        if (string[i] != ' ') { // skip a spot for space
             char_bp_driver(x1 + char_width * i, y1, convert_char(string[i]), colour);
         }
     }
 }
 
+//write number of blocks remaining for status bar UI
 void draw_status_text(int num[], int length, char colour) {
     int x1 = 0;
     int block_offset = SCREENWIDTH / length;
@@ -499,7 +518,7 @@ void draw_status_text(int num[], int length, char colour) {
         }
         else {
             int count = 0;
-            for (int j = num_digits - 1; j >= 0; j--) {
+            for (int j = num_digits - 1; j >= 0; j--) { // used to print multiple digit numbers
                 char_bp_driver(block_offset * i + block_offset / 2 + char_width * count + TILESIZE - char_width, 
                                 GAMEHEIGHT + 3 + STATUSBARHEIGHT, reverse[j], colour);
                 count++;
@@ -508,6 +527,7 @@ void draw_status_text(int num[], int length, char colour) {
     }
 }
 
+// completion screen rendering
 void draw_complete_screen(int time_finished, int blocks_placed) {
     draw_background(1);
     int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
@@ -515,11 +535,10 @@ void draw_complete_screen(int time_finished, int blocks_placed) {
     
     char message[] = "level completed";
 
-    int message_length_timer = 7;
+    int message_length_timer = 7; // time: .
     int time_finished_copy = time_finished;
     int decimals = time_finished % 1000; // 3 decimal places
-    // used too divide up numbers larger than 10 into individual digits
-    while (time_finished_copy > 0) {
+    while (time_finished_copy > 0) { // counts how long number is
         message_length_timer++;
         time_finished_copy /= 10;
     }
@@ -528,19 +547,21 @@ void draw_complete_screen(int time_finished, int blocks_placed) {
     
     int message_length_blocks = 8;
     int blocks_placed_copy = blocks_placed;
-    while (blocks_placed_copy > 0) { // used too divide up numbers larger than 10 into individual digits
+    while (blocks_placed_copy > 0) {
         message_length_blocks++;
         blocks_placed_copy /= 10;
     }
     char blocks[message_length_blocks];
     sprintf(blocks, "blocks: %d", blocks_placed);
 
+    // draw items vertically and horizontally centereds
     draw_string_center_x(y, message, 0xFF);
     draw_string_center_x(y + CHARHEIGHT, time, 0xFF);
     draw_string_center_x(y + CHARHEIGHT * 2, blocks, 0xFF);
 
 }
 
+// post completion screen rendering
 void draw_post_complete_screen(int mode) {
 
     int y = (SCREENHEIGHT - CHARHEIGHT * 3) / 2;
@@ -555,15 +576,16 @@ void draw_post_complete_screen(int mode) {
     char colour2 = 0xFF;
     char colour3 = 0xFF;
     if (mode == 1) {
-        colour1 = 0x38;
+        colour1 = 0x38; //colour the selected text green
     }
     else if (mode == 2) {
-        colour2 = 0x38;
+        colour2 = 0x38; //colour the selected text green
     }
     else if (mode == 3) {
-        colour3 = 0x38;
+        colour3 = 0x38; //colour the selected text green
     }
 
+    // draw text vertically and horizontally centered
     draw_string_center_x(y, message1, colour1);
     draw_string_center_x(y + CHARHEIGHT, message2, colour2);
     draw_string_center_x(y + CHARHEIGHT * 2, message3, colour3);
@@ -767,6 +789,7 @@ int unmap_physical(void * virtual_base, unsigned int span)
 
 char cur_key = '/';
 
+//updates cur_key global variable by polling user input 
 void * listen_kbd(void * args){
     int* kbd_ptr;
     int fd = -1;
@@ -790,10 +813,10 @@ void * listen_kbd(void * args){
 
         if(kbd_event->type == 0x01){
             if (kbd_event->value == 1) {
-                cur_key = get_keyvalue(kbd_event->code);
+                cur_key = get_keyvalue(kbd_event->code); // if key value is contained in mapping set curkey to that
             }
             else if (kbd_event->value == 0) {
-                cur_key = '/';
+                cur_key = '/'; // signals no value is being input from keyboard
             }
         }
     }
@@ -802,6 +825,7 @@ void * listen_kbd(void * args){
     return NULL;
 }
 
+//convert int value to char for keyboard input
 char get_keyvalue(int kbd_ptr){
     char key_value;
     switch(kbd_ptr){
@@ -915,6 +939,7 @@ char get_keyvalue(int kbd_ptr){
 /////////////////////////// Socket Communication /////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
+//create and return socket connection to server
 int create_socket() {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
@@ -925,7 +950,7 @@ int create_socket() {
         return -1;
     }
 
-    serv_addr.sin_family = AF_INET; // For IPv6
+    serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
 
     // Convert IPv4 and IPv6 addresses from text to binary form
@@ -945,6 +970,7 @@ int create_socket() {
     return sock;
 }
 
+//sends keyboard input to server and processes game state sent from server to render game
 void *game_handler(void *arg) {
     int sock1 = create_socket(); // sender
     int sock2 = create_socket(); // receiver
@@ -957,6 +983,8 @@ void *game_handler(void *arg) {
     int coords_col = 0;
     int coords[1000][3] = {0};
     int statusCount[MAXBLOCKS] = {0};
+
+    // signals
     int signal = 1;
     int clear_signal = 0;
     int blockIndex = 0;
@@ -973,12 +1001,14 @@ void *game_handler(void *arg) {
         return NULL;
     }
 
+    //tell server we are sender socket
 	if( send(sock1 , "1", 1, 0) < 0)
 	{
 		printf("Send failed\n");
 		return NULL;
 	}
 
+    //tell server we are reciever socket
     if( send(sock2 , "0", 1 , 0) < 0) {
         printf("Send failed\n");
         return NULL;
@@ -987,9 +1017,9 @@ void *game_handler(void *arg) {
     while (1) {
         coords_row = 0;
         coords_col = 0;
-        if (cur_key != '/') {
+        if (cur_key != '/') { // key input received
             printf("%c\n", cur_key);
-            if( send(sock1 , &cur_key , 1 , 0) < 0) {
+            if( send(sock1 , &cur_key , 1 , 0) < 0) { // send input to server
                 printf("Send failed\n");
                 return NULL;
             }
@@ -1002,11 +1032,10 @@ void *game_handler(void *arg) {
             }
         }
         
-        valread = read(sock2, buffer, buffer_size);
-        // int changed = strcmp(prev_buffer, buffer); 
+        valread = read(sock2, buffer, buffer_size); // read game state from server
         char * token = strtok(buffer, ",");
         
-        if (*token == '?') { // complete screen signal
+        if (*token == '?') { // question mark complete screen signal and next two items are time to complete and blocks placed
             if (!complete) {
                 for (int i = 0; i < 2; i++) {
                     token = strtok(NULL, ",");
@@ -1021,7 +1050,7 @@ void *game_handler(void *arg) {
                 complete = 1;
             }
         }
-        else if (*token == '/') { // post-complete screen
+        else if (*token == '/') { // forward slash signals post-complete screen with mode as the next item
             token = strtok(NULL, ",");
             prevMode = mode;
             mode = atoi(token);
@@ -1032,18 +1061,18 @@ void *game_handler(void *arg) {
         else {
             while( token != NULL ) {
                 complete = 0;
-                if (*token == '.') { // clear screen signal
+                if (*token == '.') { // period signal clear screen and the next item determines which background to use
                     clear_signal = 1;
                     token = strtok(NULL, ",");
                     bg_mode = atoi(token);
                 }
-                else if(*token == '&') { // '&' signals end of coordinates
+                else if(*token == '&') { // ampersand signals end of coordinates
                     break;
                 }
-                else if(*token == '!' && blockSignal) { //If we recieve the second ! we have reached the end of the statusCount
+                else if(*token == '!' && blockSignal) { // second exclamation mark we have reached the end of the statusCount
                     blockSignal = 0;
                 }
-                else if(*token == '!' || blockSignal) { 
+                else if(*token == '!' || blockSignal) { // first exclamation mark signals start of status block count
                     if(blockSignal == 0) { // start checking for block numbers
                         blockSignal = 1;
                         blockIndex = 0;
@@ -1054,10 +1083,11 @@ void *game_handler(void *arg) {
                     }
                 }
                 else {
+                    // store coordinate data to 2d array with size 3 by x where x is number of tiles
                     int num = atoi(token);
                     coords[coords_row][coords_col] = num;
                     coords_col++;
-                    if(coords_col == 3) {
+                    if(coords_col == 3) { // coords_col 0 is the x coordinate, 1 is y coordinate, 2 is the tile type
                         coords_col = 0;
                         coords_row++;
                     }
@@ -1070,17 +1100,18 @@ void *game_handler(void *arg) {
                 clear_signal = 0;
             }
 
-            renderTiles(coords, coords_row);
-            if (blockIndex) {
+            renderTiles(coords, coords_row); //render tile list sent from server
+
+            if (blockIndex) { //if status bar block amounts are sent, render them
                 draw_status_text(statusCount, blockIndex, 0xFF);
             }
         }
-        if( send(sock2 , "0", 1, 0) < 0) {
+        if( send(sock2 , "0", 1, 0) < 0) { //tell server we have finished processing and are ready to receive next game state
             printf("Send failed\n");
             return NULL;
         }
 
-        usleep(50000); // takes 20 key inputs per second
+        usleep(50000); // takes only 20 key inputs per second, to match server tick rate
     }
 
     return NULL;
@@ -1088,12 +1119,12 @@ void *game_handler(void *arg) {
 
 int main(void)
 {
-    draw_background(1);
+    draw_background(1); // clear screen
     pthread_t thread_game;
     pthread_t thread_kb;
 
-    pthread_create(&thread_game, NULL, game_handler, NULL);
-    pthread_create(&thread_kb, NULL, listen_kbd, NULL);
+    pthread_create(&thread_game, NULL, game_handler, NULL); // server communication thread
+    pthread_create(&thread_kb, NULL, listen_kbd, NULL); // thread to poll keyboard inputs
 
     pthread_join(thread_game, NULL);
     printf("thread 1 joined");

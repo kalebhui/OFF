@@ -1,3 +1,6 @@
+# Stores game data including menu/level tile lists, block amounts and spawn rates
+# @author Kaleb Hui, Luka Rogic, Sam Gu, Ting Xu
+
 #-------------------------------------------------------------------------------------MENU SCREENS--------------------------------------------------------------------------------
 
 #player select screen

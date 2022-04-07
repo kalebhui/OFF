@@ -1,6 +1,7 @@
 # Used to serve as a python client to view game state from server
 # Also allows user to make inputs to server and play as one of the players
 # this client in single threaded
+# @author Kaleb Hui, Luka Rogic, Sam Gu, Ting Xu
 
 import socket            
 import pygame
