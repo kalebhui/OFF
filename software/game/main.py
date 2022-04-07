@@ -407,10 +407,13 @@ class Player():
             onIce = False
             onTrampoline = False
             onGrav = False
+            above = False
+            below = False
 
             for tile in world.tile_list[:]:
                 if tile[1].colliderect(self.rect.x, self.rect.y + 1, self.width, self.height):
                     onBlock = True #p1 is standing on a block
+                    below = True
                     if tile[2] == 3:
                         onIce = True #p1 is standing on ice
                     elif tile[2] == 4:
@@ -422,6 +425,7 @@ class Player():
                         self.gravity = -gravity #switch the gravity
                 elif tile[1].colliderect(self.rect.x, self.rect.y - 1, self.width, self.height):
                     onBlock = True #so when gravity is reversed we can't spam s
+                    above = True
                     if tile[2] == 3:
                         onIce = True
                     elif tile[2] == 4:
@@ -438,13 +442,13 @@ class Player():
             if key[pygame.K_w]:
                 if onTrampoline and not onGrav:
                     self.vel_y = -tramp_change_y
-                elif onBlock and not onGrav:
+                elif onBlock and not onGrav and below:
                     self.vel_y = -reg_change_y
 
             if key[pygame.K_s]:
                 if onTrampoline and not onGrav:
                     self.vel_y = tramp_change_y
-                elif onBlock and not onGrav:
+                elif onBlock and not onGrav and above:
                     self.vel_y = reg_change_y
 
             if key[pygame.K_a]:

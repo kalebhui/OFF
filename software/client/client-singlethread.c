@@ -239,6 +239,7 @@ void draw_tile_D(int x, int y, int tileSize){  //trap
     //define tile drawing procedure here
     rectangle_driver(x, y, tileSize, 3, 0xE0);
     rectangle_driver(x, y+3, tileSize, tileSize-3, 0xDD);
+    rectangle_driver(x, y, tileSize, 3, 0xE0);
 }
 
 void draw_tile_E(int x, int y, int tileSize){  //Finish

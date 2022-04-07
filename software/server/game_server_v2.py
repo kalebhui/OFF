@@ -332,6 +332,8 @@ class World():
         if key_p1 == 'r' or key_p2 == 'r': # reset to default
             self.tile_list = self.default_tile_list.copy()
             self.avail_blocks = self.default_avail_blocks.copy()
+            playerOne.reset()
+            playerTwo.reset()
             changed = True
             pygame.sprite.Group.empty(enemy_group)
 
@@ -383,10 +385,13 @@ class Player():
             onIce = False
             onTrampoline = False
             onGrav = False
+            above = False
+            below = False
 
             for tile in world.tile_list[:]:
                 if tile[1].colliderect(self.rect.x, self.rect.y + 1, self.width, self.height):
                     onBlock = True #p1 is standing on a block
+                    below = True
                     if tile[2] == TILE_ICE:
                         onIce = True #p1 is standing on ice
                     elif tile[2] == TILE_TRAMP:
@@ -398,6 +403,7 @@ class Player():
                         change_y = 0
                 elif tile[1].colliderect(self.rect.x, self.rect.y - 1, self.width, self.height):
                     onBlock = True #so when gravity is reversed we can't spam s
+                    above = True
                     if tile[2] == TILE_ICE:
                         onIce = True
                     elif tile[2] == TILE_TRAMP:
@@ -411,13 +417,13 @@ class Player():
             if key == 'w':
                 if onTrampoline and not onGrav:
                     self.vel_y = -tramp_change_y
-                elif onBlock and not onGrav:
+                elif onBlock and not onGrav and below:
                     self.vel_y = -reg_change_y
 
             if key == 's':
                 if onTrampoline and not onGrav:
                     self.vel_y = tramp_change_y
-                elif onBlock and not onGrav:
+                elif onBlock and not onGrav and above:
                     self.vel_y = reg_change_y
 
             elif key == 'a':
@@ -544,6 +550,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = x
         self.real_x = x
         self.rect.y = y
+        self.adjusted_rect = self.rect.copy()
 
     def update(self, count):
         global changed
@@ -551,7 +558,8 @@ class Enemy(pygame.sprite.Sprite):
         if count == 20:
             self.rect.y += tile_size
             changed = True
-        self.rect.x = self.real_x - world.camera.leftmost_x
+        self.adjusted_rect = self.rect.copy()
+        self.adjusted_rect.x = self.real_x - world.camera.leftmost_x
         collide_rect = pygame.Rect(self.real_x, self.rect.y, tile_size, tile_size) #since camera adjustments change x
         if self.rect.bottom >= game_height - tile_size:
             self.kill() #remove enemy from game if out of bounds
@@ -778,7 +786,7 @@ def sender ():
                     index += 1
                 
                 for enemy in pygame.sprite.Group.sprites(enemy_group):
-                    str_tilelist += f"{enemy.rect.x},{enemy.rect.y},{TILE_BOMB},"
+                    str_tilelist += f"{enemy.adjusted_rect.x},{enemy.adjusted_rect.y},{TILE_BOMB},"
                 str_tilelist += "&"
 
             for client in clients_arr:

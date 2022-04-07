@@ -5,7 +5,7 @@ import bitmaps
 
 pygame.init()
 clock = pygame.time.Clock()
-screen_width = 700
+screen_width = 320
 screen_height = 240
 tile_size = 10
 spawn_coords_p2 = (20 * tile_size, 5 * tile_size)
@@ -58,7 +58,7 @@ def findPosition():
 #             world_data[row][col] = 0
 #             world_data[row-3][col] = 2
 
-world_data = bitmaps.level_3
+world_data = bitmaps.level_select
 print(len(world_data[0]))
 
 
