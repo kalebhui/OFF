@@ -16,11 +16,11 @@ General:
 - r:        reset level
 - 0:        level select
 
-player select:
+Player select:
 - 1:        select player 1
 - 2:        select player 2
 
-level select: 
+Level select: 
 - 1:        select level 1
 - 2:        select level 2
 - 3:        select level 1
@@ -28,17 +28,17 @@ level select:
 - 5:        select level 1
 - 6:        select infinite level
 
-player 1 keys:
+Player 1 keys:
 - w:        jump
 - s:        jump downwards 
 - a:        move left
 - d:        move right
 
-player 2 keys:
-- i:        move up
-- k:        move down
-- j:        move left
-- l:        move right
+Player 2 keys:
+- a:        move up
+- s:        move down
+- d:        move left
+- f:        move right
 - 1:        select normal block
 - 2:        select ice block
 - 3:        select trampoline block
