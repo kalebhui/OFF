@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Created by Kaleb Hui, Luka Rogic, Sam Gu and Ting Xu, Outwit or Fall Flat (OFF) is a two player online platforming game where the objective is to beat the level as fast as possible! The project consists of a custom built game console used to input actions through a keyboard and output data on to a VGA monitor. We also designed the game and hosted it on a remote server for users to play remotely.
+Created by Kaleb Hui, Luka Rogic, Sam Gu and Ting Xu, OFF: Outwit or Fall Flat is a two player online platforming game where the objective is to beat the level as fast as possible! The project consists of a custom built game console used to input actions through a keyboard and output data on to a VGA monitor. We also designed the game and hosted it on a remote server for users to play remotely.
 
 ## Demo
 [![VIDEO](https://img.youtube.com/vi/LAMEHRfCX0M/0.jpg)](https://youtu.be/LAMEHRfCX0M)
